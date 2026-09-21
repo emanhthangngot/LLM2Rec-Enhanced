@@ -1,0 +1,17 @@
+{
+  "id": "trixuanle/llm2rec-csft-budget-link-4-source",
+  "title": "LLM2Rec Budgeted CSFT Link 4 Source",
+  "code_file": "csft_chain.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_tpu": false,
+  "enable_internet": true,
+  "keywords": ["llm2rec", "csft", "budgeted"],
+  "dataset_sources": ["trixuanle/llm2rec-amazonmix6-5core"],
+  "kernel_sources": ["trixuanle/llm2rec-budgeted-csft-link-3-source"],
+  "competition_sources": [],
+  "model_sources": [],
+  "machine_shape": "NvidiaTeslaT4"
+}

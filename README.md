@@ -27,16 +27,16 @@ Two structural lessons carry across every generation:
 
 ## Version Generations
 
-| Version | Codename | Core Idea | Status | Dataset(s) | Backbone(s) | Result vs. Baseline | Why (closed generations) |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **v0** | `LLM2Rec-Baseline` | Faithful text-only compatibility reproduction (CSFT → MNTP → SimCSE → SASRec/GRU4Rec/BERT4Rec) under a single-T4 compute budget | Closed — reference | Games (dev), Arts (replication), AmazonMix-6 (pretrain) | SASRec, GRU4Rec, BERT4Rec | NDCG@10 `0.0504` (IEM ckpt-1000) vs. paper `0.0521` (`-3.3%` gap) | — (reproduction, not an intervention) |
-| **v9.0** | `Additive-Item-Fusion` | CLIP image feature → MLP → summed directly into the item embedding | **Rejected** | Games | SASRec | Real-vs-shuffle NDCG@10 swings `-16.3%` to `+1.8%`; random visual input alone damages ranking | Visual MLP is `5x` larger than the text adapter it's added to, so it reshapes candidate geometry instead of augmenting it — a **mismatched** (shuffled) image damages ranking almost as much as the real one, so the gain/loss isn't visual-specific |
-| **v9.1** | `Sequence-Side-Fusion` (S1/S2) | Visual signal folded into the user-sequence hidden state | **Rejected** | Games | SASRec | `92%` of the apparent gain traced to `740` immediate-repeat rows; a recency-only reranker with no image input beats it on all 3 seeds | The fused sequence state learned to copy the last interacted item, not visual semantics — a reranker with **zero image input** already wins on the same slice |
-| **v9.2** | `Frozen-Score-Residual` (C0.5 headline + 2 caveats; 6 minor sub-experiments folded in) | `score_final = score_text + α·z_visual` at the ranking boundary; text recommender and candidate table stay frozen | **Closed — conditional positive, program exhausted (`STOP2`)** | Games (dev), Sports (transfer) | SASRec, BERT4Rec, GRU4Rec (stress test) | `PASS` — matched-shuffle ATE `+0.0015`–`0.0017` NDCG@10 on both SASRec and BERT4Rec, 95% CI excludes zero (`C0.5`) | Not called a general method for two reasons: (1) **Sports transfer fails** — CSFT/IEM were never tuned on that domain, so the frozen visual profile doesn't carry over; (2) **GRU4Rec's baseline is near-degenerate** (`~0.0007` NDCG@10), so its huge relative gain there is filling near-empty signal, and a text-PCA control beats real visual outright on that backbone |
-| **v10** *(active)* | `Caption-Augmentation` | Florence‑2 offline image→text captions injected into CSFT/MNTP/SimCSE input history via 5 controlled arms (`title-only`/`null`/`real`/`shuffle`/`paraphrase`) | **Running — corpus generation resumed, no downstream training yet** | Games (dev), Arts (replication), AmazonMix-6 (pretrain); Baby reserved sealed | SASRec (matched) | — | n/a — still running |
-| **v11** *(active)* | `HaNoRec-CF-Hardness` | Freeze LLM2Rec + SASRec; blend a CF score margin (`w ∈ {1.0, 0.5, 0.0}`) with HaNoRec's semantic hardness to weight a DPO-tuned Qwen2.5‑VL reranker over SASRec's real top‑20 | **Running — SFT + 6 branch kernels mid-verification** | Games only | Qwen2.5-VL reranker over SASRec | — | n/a — still running |
+| Version | Codename | Core Idea | Status | Dataset(s) | Backbone(s) |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **v0** | `LLM2Rec-Baseline` | Faithful text-only compatibility reproduction (CSFT → MNTP → SimCSE → SASRec/GRU4Rec/BERT4Rec) under a single-T4 compute budget | Closed — reference | Games (dev), Arts (replication), AmazonMix-6 (pretrain) | SASRec, GRU4Rec, BERT4Rec |
+| **v9.0** | `Additive-Item-Fusion` | CLIP image feature → MLP → summed directly into the item embedding | **Rejected** | Games | SASRec |
+| **v9.1** | `Sequence-Side-Fusion` (S1/S2) | Visual signal folded into the user-sequence hidden state | **Rejected** | Games | SASRec |
+| **v9.2** | `Frozen-Score-Residual` | `score_final = score_text + α·z_visual` at the ranking boundary; text recommender and candidate table stay frozen | **Closed — conditional positive, program exhausted (`STOP2`)** | Games (dev), Sports (transfer) | SASRec, BERT4Rec |
+| **v10** *(active)* | `Caption-Augmentation` | Florence‑2 offline image→text captions injected into CSFT/MNTP/SimCSE input history via 5 controlled arms (`title-only`/`null`/`real`/`shuffle`/`paraphrase`) | **Running — corpus generation resumed, no downstream training yet** | Games (dev), Arts (replication), AmazonMix-6 (pretrain); Baby reserved sealed | SASRec (matched) |
+| **v11** *(active)* | `HaNoRec-CF-Hardness` | Freeze LLM2Rec + SASRec; blend a CF score margin (`w ∈ {1.0, 0.5, 0.0}`) with HaNoRec's semantic hardness to weight a DPO-tuned Qwen2.5‑VL reranker over SASRec's real top‑20 | **Running — SFT + 6 branch kernels mid-verification** | Games only | Qwen2.5-VL reranker over SASRec |
 
-Blank cells in the last column are intentional: `v10`/`v11` have not cleared the matched-control gate that every closed generation above was required to pass before a result was recorded (see `AGENTS.md`: "No fabricated citations. If a claim lacks a source, write `(unsourced)`."). `v10` and `v11` inherit the same discipline as `v0`–`v9.2`: frozen upstream checkpoints where possible, matched non-semantic controls, seed-paired bootstrap, and a hard rule that corpus completion, a running kernel, or a positive training loss is not itself evidence of effectiveness.
+Results and rejection reasons are pulled out into their own tables below (`Results vs. Baseline` and `Why Rejected / Limited`) instead of being packed into this overview.
 
 ---
 
@@ -227,24 +227,30 @@ One caveat, stated rather than smoothed over: this landscape uses the paper's ow
 
 ---
 
-## Comprehensive Experimental Benchmark
+## Results vs. Baseline
 
-**Same dataset?** Mostly yes — every row below except one is **Games** (`Video_Games_5core`); one row is the **Sports** transfer test. What is *not* the same across rows is the **checkpoint** (pre-patch vs. patched-IEM — a mid-program bidirectional-attention bug fix), the **evaluation slice** (all test rows vs. novel-target-only, after `v9.1` showed aggregate metrics hide an immediate-repeat confound), and the **backbone** (SASRec/BERT4Rec/GRU4Rec). Those columns are kept explicit instead of hidden, because a row that silently mixed checkpoints or slices would misattribute the patch's or the slicing's own effect to the visual intervention.
+**Same dataset?** Yes — every row is **Games** (`Video_Games_5core`), the primary development dataset. Only rows that are an actual contribution (the reproduced baseline, and the one result that passed its own matched-control gate) are kept here; stress tests and failed-transfer runs contributed no positive evidence, so they are not given metric rows — they are explained, by name, in the `Why Rejected / Limited` table below instead.
 
-`v9.2` originally spanned 10 sub-experiments (I1‑A, a patched rerun, joint-training, `R1` non-semantic controls, `G2` exposure gating, a GRU4Rec stress test, a BERT4Rec replication, Sports transfer, `C0.5`, and a rejected `C1` selective policy). Only the **main** ones are kept below: `C0.5` is the actual headline evidence (it superseded `I1-A`/patched-rerun/joint-training/`G2`/BERT4Rec-replication, all of which used a looser real-vs-shuffle check that `C0.5`'s ATE-with-CI check replaced), and the GRU4Rec/Sports rows are kept because they are the two results that stop `v9.2` from being called a general method. `R1` and `C1` are folded into the `Root Cause` column of the rows they explain rather than kept as separate rows.
+| Generation | Backbone | Checkpoint | Slice | Baseline NDCG@10 | Method NDCG@10 | Δ NDCG@10 | Baseline Recall@10 | Method Recall@10 | Δ Recall@10 | Verdict |
+| :--- | :--- | :--- | :--- | ---: | ---: | ---: | ---: | ---: | ---: | :--- |
+| `v0` (reference reproduction) | SASRec | pre-patch, ckpt-1000 | all rows | 0.0521 (paper) | 0.0504 | `-3.31%` | 0.0865 (paper) | 0.0821 | `-5.13%` | Reproduction, not an intervention |
+| `v9.2` `C0.5` matched-shuffle | SASRec | patched-IEM | novel-only, ATE | −0.00031 (shuffle ATE) | 0.00137 (real ATE) | `+0.00168`, CI `[0.00126, 0.00220]` | — | — | — | **`PASS_VISUAL_SPECIFICITY`** |
+| `v9.2` `C0.5` matched-shuffle | BERT4Rec | patched-IEM | novel-only, ATE | −0.00010 (shuffle ATE) | 0.00141 (real ATE) | `+0.00151`, CI `[0.00086, 0.00214]` | — | — | — | **`PASS_VISUAL_SPECIFICITY`** |
 
-| Generation | Dataset | Backbone | Checkpoint | Slice | Baseline NDCG@10 | Method NDCG@10 | Δ NDCG@10 | Baseline Recall@10 | Method Recall@10 | Δ Recall@10 | Verdict | Root Cause |
-| :--- | :--- | :--- | :--- | :--- | ---: | ---: | ---: | ---: | ---: | ---: | :--- | :--- |
-| `v0` (reference) | Games | SASRec | pre-patch, ckpt-1000 | all rows | 0.0521 (paper) | 0.0504 | `-3.31%` | 0.0865 (paper) | 0.0821 | `-5.13%` | Reproduction, not an intervention | n/a |
-| `v9.0` additive fusion | Games | SASRec | pre-patch (own table) | all rows | 0.04889 | 0.04016 | `-17.86%` | — | — | — | **Rejected** | Visual MLP `5x` larger than the text adapter reshapes candidate geometry; a mismatched (shuffled) image damages ranking almost as much as the real one, so the loss isn't visual-specific |
-| `v9.2` C0.5 matched-shuffle, SASRec | Games | SASRec | patched-IEM | novel-only, ATE | −0.00031 (shuffle ATE) | 0.00137 (real ATE) | `+0.00168`, CI `[0.00126, 0.00220]` | — | — | — | **`PASS_VISUAL_SPECIFICITY`** | n/a — this is the passing result |
-| `v9.2` C0.5 matched-shuffle, BERT4Rec | Games | BERT4Rec | patched-IEM | novel-only, ATE | −0.00010 (shuffle ATE) | 0.00141 (real ATE) | `+0.00151`, CI `[0.00086, 0.00214]` | — | — | — | **`PASS_VISUAL_SPECIFICITY`** | n/a — this is the passing result |
-| `v9.2` GRU4Rec stress test | Games | GRU4Rec | pre-patch (own table) | novel-only | 0.00065 | 0.01401 | `+2044%` | — | — | — | Discounted, not a confirmation | GRU4Rec's own text-only baseline is near-degenerate (`~0.0007`), so the huge relative gain fills near-empty signal rather than proving visual content matters — a text-PCA control (`0.01665`) beats real visual outright on this backbone |
-| `v9.2` Sports transfer | Sports | BERT4Rec | pre-patch (own table) | novel-only, 3-seed mean | 0.00702 | 0.00711 | `+0.000016` abs (`fail`) | — | — | — | **Fails** — no transfer off Games | CSFT/IEM were never tuned on Sports; the frozen visual profile and score-boundary calibration learned on Games don't carry over — real barely edges out shuffle and loses to plain text |
-| `v10` caption augmentation | Games, Arts | SASRec (matched) | — | — | — | — | — | — | — | — | Running, no result | n/a — still running |
-| `v11` HaNoRec CF-hardness | Games | Qwen2.5-VL reranker | — | — | — | — | — | — | — | — | Running, no result | n/a — still running |
+`v10`/`v11` have no rows here yet — both are still running and have not cleared the same matched-control gate `C0.5` used, so no metric is reported for either (see `AGENTS.md`'s no-fabrication rule).
 
-**Reading the table honestly:** the two `C0.5` rows are the closed program's actual headline result — a small, positive, Games-specific visual-specificity effect (`~+0.0015`–`+0.0017` NDCG@10, both 95% CIs exclude zero). `v9.0`'s rejection and `v9.2`'s GRU4Rec/Sports rows are what keep this from being called a general method; each now carries its own `Root Cause` instead of requiring a separate prose section to explain why.
+## Why Rejected / Limited
+
+Rejection and limitation reasons for every generation that did **not** end up in the table above, so the negative evidence stays documented without cluttering the metrics table with rows that have no contribution to show.
+
+| Generation | Verdict | Root Cause |
+| :--- | :--- | :--- |
+| `v9.0` additive item-embedding fusion | **Rejected** | Visual MLP `5x` larger than the text adapter it's added to reshapes candidate geometry instead of augmenting it; a **mismatched** (shuffled) image damages ranking almost as much as the real one (aggregate NDCG@10 `-17.86%` for real, `-12.68%` for shuffle vs. text), so the loss isn't visual-specific |
+| `v9.1` sequence-side fusion (S1/S2) | **Rejected** | `92%` of the apparent gain traced to `740` immediate-repeat rows; a recency-only reranker with **zero image input** beats it on the same slice on all 3 seeds — the fused state learned to copy the last interacted item, not visual semantics |
+| `v9.2` frozen score-residual — Sports transfer | Limitation | CSFT/IEM were never tuned on the Sports domain; the frozen visual profile and score-boundary calibration learned on Games don't carry over — real visual barely edges out a matched shuffle (`+0.000016` mean NDCG@10) and loses to plain text |
+| `v9.2` frozen score-residual — GRU4Rec backbone | Limitation | GRU4Rec's own text-only baseline is near-degenerate (`~0.0007` NDCG@10), so a large relative visual gain there fills near-empty signal rather than proving visual content matters; a text-PCA control (`0.01665`) beats real visual outright on this backbone |
+
+Together, these two rows are why `v9.2` is reported as **Games-conditional**, not a general method, despite passing `C0.5` on that one dataset.
 
 ---
 
@@ -259,7 +265,19 @@ LLM2Rec-Research/
 ├── llm2rec/                            # Upstream package: CSFT/MNTP/SimCSE configs and entry points
 ├── seqrec/                             # Upstream downstream sequential-recommender evaluators
 ├── baselines/                          # Upstream baseline recommenders
-├── research/                           # This fork's active generations (v10, v11)
+├── research/                           # This fork's own code: v0 baseline repro, v9 multimodal program, active v10/v11
+│   ├── baseline/                       # v0 — local Kaggle T4 compatibility reproduction (the source of every v0 number above)
+│   │   ├── kaggle/                     # csft_chain.py, iem_pipeline.py, evaluate_games.py, audit_games.py + kernel metadata
+│   │   ├── config/compatibility-profile.json  # Frozen deviations from the paper's full-compute profile
+│   │   ├── provenance/                 # upstream-contract.json, reproduction-provenance.json — pinned commit/hashes
+│   │   ├── validate_baseline.py        # Contract validator run before any baseline number is trusted
+│   │   └── README.md
+│   ├── multimodal/                     # v9.0/v9.2 — score-residual and additive-fusion model code
+│   │   ├── models/score_visual_fusion.py            # score_final = score_text + alpha * z_visual (v9.2)
+│   │   ├── models/interventional_visual_residual.py # Additive item-embedding fusion (v9.0)
+│   │   ├── preflight.py / dataset_preflight.py       # Image-coverage and manifest contract checks
+│   │   ├── visual_screen.py            # G1 train-only visual screen used before spending GPU budget
+│   │   └── test_*.py                   # Unit tests for each module above
 │   ├── caption_augmentation/           # v10 — arm construction, Florence-2/Qwen backends, corpus tests
 │   │   ├── corpus.py                   # Arm construction, derangement, common-history budgeting
 │   │   ├── caption.py                  # Captioner/Paraphraser/Tokenizer backends
@@ -272,12 +290,20 @@ LLM2Rec-Research/
 │       ├── train.py                    # Qwen2.5-VL LoRA SFT + hardness-scaled DPO
 │       ├── audit.py                    # Independent artifact/hash/metric audit
 │       └── experiment.json             # Frozen protocol: pair counts, seeds, weights, artifact pins
-└── docs/
-    └── reports/                        # Source evidence for every version-generation claim above
-        ├── llm2rec-final-teacher-report.md          # v0 - v9.2 pipeline, results, and closure rationale
-        ├── 260920-llm2rec-two-methods-research.md   # v10 + v11 mechanism deep-dive
-        └── two-llm2rec-methods-20260919-1517.md     # v10 + v11 current execution state and next steps
-```
+
+### Source code audit
+
+Before this repository was pushed, it was audited for whether every claimed result had its producing code included — not just the upstream vanilla LLM2Rec package. The gap found and fixed: `research/baseline/` (the actual local Kaggle T4 reproduction that produced every `v0` number in this README) and `research/multimodal/` (the `v9.0`/`v9.2` model code, `score_visual_fusion.py` and `interventional_visual_residual.py`) were missing from the initial push and have been added. Every version in the `Results vs. Baseline` table now has its source code present in this repository:
+
+| Version | Result source | Code present |
+| :--- | :--- | :--- |
+| `v0` | `research/baseline/` | Yes — Kaggle kernels, compatibility-profile config, provenance, validator |
+| `v9.0` | `research/multimodal/models/interventional_visual_residual.py` | Yes |
+| `v9.2` | `research/multimodal/models/score_visual_fusion.py`, `preflight.py`, `visual_screen.py` | Yes |
+| `v10` | `research/caption_augmentation/` | Yes |
+| `v11` | `research/hanorec_cf_hardness/` | Yes |
+
+`v9.1` (sequence-side fusion) has no surviving local module in this fork's own tree — it is documented only in `docs/reports/` and in `research/multimodal/README.md`'s history section; its Kaggle kernels were not part of the source directories synced into this repository. This is stated rather than papered over with a placeholder file.
 
 ---
 
@@ -306,7 +332,18 @@ pip install torch>=2.6.0 transformers>=4.44.2 llm2vec==0.2.3
 
 Upstream preprocessed datasets: [Google Drive link](https://drive.google.com/file/d/1GIXWaaaNuUkUtuFy5JTN0OwAQiLGb2z4/view?usp=sharing), unzipped under `./data`. `v10`/`v11` additionally require the Amazon Reviews'23 image manifests for their respective domains (Games, Arts) — see `research/caption_augmentation/experiment.json` and `research/hanorec_cf_hardness/experiment.json` for exact artifact hashes and pinned dataset slugs.
 
-### 4. Reproduce the upstream baseline (v0)
+### 4. Reproduce this fork's `v0` baseline (T4-compatible, not the paper's full 2xA40 profile)
+
+```bash
+python research/baseline/validate_baseline.py         # checks the frozen contract before any run
+# Kaggle-targeted pipeline (requires the Kaggle MCP/CLI and a T4/P100 runtime):
+#   research/baseline/kaggle/csft_chain.py   -> CSFT
+#   research/baseline/kaggle/iem_pipeline.py -> MNTP + SimCSE
+#   research/baseline/kaggle/evaluate_games.py -> full-catalog SASRec evaluation
+#   research/baseline/kaggle/audit_games.py    -> independent raw-rank recomputation
+```
+
+To instead run the paper's own full-compute profile (2x A40, 10,000 CSFT steps), use the upstream scripts at the repository root:
 
 ```bash
 bash run_LLM2Rec_CSFT.sh

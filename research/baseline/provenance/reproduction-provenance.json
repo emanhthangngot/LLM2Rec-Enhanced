@@ -1,0 +1,67 @@
+{
+  "operation": "llm2rec-text-reproduction-kaggle",
+  "recorded_at": "2026-08-20",
+  "source": {
+    "repository": "https://github.com/HappyPointer/LLM2Rec",
+    "clone_path": "/home/pearspringmind/NCKH/LLM2Rec/LLM2Rec",
+    "commit": "73b481f710f67166ab958f4985d27b27fb410871",
+    "branch": "main",
+    "working_tree": "clean",
+    "tmp_tree_comparison": "not available; /tmp/LLM2Rec was absent during verification",
+    "upstream_license": "absent"
+  },
+  "source_file_sha256": {
+    "run_LLM2Rec_CSFT.sh": "c46111ed4b2c5dec161a3a26f1f30b74879e668d8c6d7c5e01445d8d3f85f20c",
+    "run_LLM2Rec_IEM.sh": "efc9e75d1806e711ac00a2759543316886f15a8ae1a0a2a4379bd03188b8ccaa",
+    "script_extract_and_evaluate.sh": "644bc09d66692ca7d361ae018aef0edfc3b7e136c330da7200d193a04ed91e99",
+    "llm2rec/run_csft.py": "4ceb531f24c01ba7c18a00376f75fe3700a0834ec7bd78d918b0b70219b8020e",
+    "llm2rec/train_mntp_config.json": "b4033d8fa431a006a931a8e5184ce624ba6648f6c88ccc3ee4d3b0f4bad2b61e",
+    "llm2rec/train_simcse_config.json": "007b729d6fa28db36f91930ec2d88b9a24751ae1cf6e5187fe55ee91a8bb7465",
+    "extract_llm_embedding.py": "29fd09df92736e15b521efa0d2a2f8407459ff0b571654f006a3cdab14c6eb85",
+    "repeated_evaluate_with_seqrec.py": "d90a431af66f934217b6808a0d66cfba0d95e3223390920d28d016fe526c33e1",
+    "seqrec/evaluator.py": "65a33ee989e1b0d65aec5050b710d141f14698575530c7f3a2ee9228ef23ae49"
+  },
+  "kaggle": {
+    "credentials_configured": true,
+    "username": "trixuanle",
+    "credential_value_storage": "none",
+    "mcp_server": ".codex/mcp/kaggle_mcp_server.py",
+    "mcp_capability_gap": "No dataset create/version tool is exposed; Phase 2 will use the repo-local Kaggle CLI directly unless repeated versioning proves error-prone.",
+    "phone_verified": "unknown",
+    "phone_verification_evidence": "Kaggle user profile endpoint returned HTTP 404 for the account; no verification field was exposed.",
+    "internet_kernel_dependency": "public Qwen2-0.5B download at runtime; smoke kernel returned HTTP 200; no HF token used",
+    "datasets": {
+      "amazonmix6": "trixuanle/llm2rec-amazonmix6-5core",
+      "games5core": "trixuanle/llm2rec-games-5core",
+      "upload_method": "direct Kaggle CLI because MCP exposes no dataset create/version tool",
+      "qwen2_model_dataset": "not staged; public Hugging Face runtime download verified"
+    },
+    "probe": {
+      "kernel": "trixuanle/llm2rec-csft-t4-probe",
+      "version": 7,
+      "status": "COMPLETE",
+      "micro_batch_size": 2,
+      "gradient_accumulation_steps": 64,
+      "training_elapsed_seconds": 2609.92311005,
+      "seconds_per_optimizer_step": 52.198462201000005,
+      "configured_tokens_per_second": 2511.031828778453,
+      "peak_vram_gib": 12.002184867858887,
+      "loss_points": 50,
+      "loss_first": 4.6266560554504395,
+      "loss_last": 3.1035101413726807,
+      "micro_batch_4": "OOM at optimizer step 1",
+      "budget_branch": "C",
+      "projected_official_max_steps_hours": 144.9957283361111,
+      "quota_after_probe": {
+        "used_gpu_hours": 2.16,
+        "remaining_gpu_hours": 27.84,
+        "refresh_at": "2026-08-22T00:00:00Z"
+      }
+    }
+  },
+  "security": {
+    "credentials_committed": false,
+    "hf_token_committed": false,
+    "raw_credentials_logged": false
+  }
+}

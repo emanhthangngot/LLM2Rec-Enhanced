@@ -1,0 +1,17 @@
+{
+  "id": "trixuanle/llm2rec-budgeted-iem-disk-retry",
+  "title": "LLM2Rec Budgeted IEM Disk Retry",
+  "code_file": "iem_pipeline.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_tpu": false,
+  "enable_internet": true,
+  "keywords": ["llm2rec", "iem", "simcse"],
+  "dataset_sources": ["trixuanle/llm2rec-amazonmix6-5core"],
+  "kernel_sources": ["trixuanle/llm2rec-budgeted-csft-link-4-source"],
+  "competition_sources": [],
+  "model_sources": [],
+  "machine_shape": "NvidiaTeslaT4"
+}

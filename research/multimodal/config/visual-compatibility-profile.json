@@ -1,0 +1,52 @@
+{
+  "schema_version": "2026-08-25.1",
+  "name": "llm2rec-late-visual-signal-screen",
+  "status": "preflight-before-run",
+  "method_boundary": "Frozen CLIP visual item signal added at the downstream LLM2Rec item-embedding adapter; not an official multimodal LLM2Rec reproduction.",
+  "source": {
+    "repository": "https://github.com/HappyPointer/LLM2Rec",
+    "commit": "73b481f710f67166ab958f4985d27b27fb410871",
+    "baseline_package": "code/llm2rec/baseline/",
+    "dataset": "Games_5core"
+  },
+  "image_contract": {
+    "encoder": "openai/clip-vit-base-patch32",
+    "revision_policy": "resolve-and-record-immutable-40-char-commit",
+    "normalization": "l2",
+    "missing_image": "zero-vector-plus-availability-mask",
+    "catalog_coverage_gate": 0.8,
+    "test_target_coverage_gate": 0.8,
+    "required_manifest_hashes": [
+      "image_manifest_sha256",
+      "visual_features_sha256"
+    ]
+  },
+  "tensor_contract": {
+    "text_embedding_dim": 896,
+    "visual_embedding_dim": 512,
+    "availability_dim": 1,
+    "visual_branch_input_dim": 513,
+    "visual_branch_projection_dim": 896,
+    "fusion": "additive-to-text-adapter-output"
+  },
+  "arms": {
+    "t-null": "zero visual and zero availability mask",
+    "t-mask": "zero visual and real availability mask",
+    "l-shuffle": "fixed within-frequency-bin derangement with real availability mask",
+    "l-real": "real frozen CLIP vectors with real availability mask"
+  },
+  "evaluation": {
+    "checkpoint": 500,
+    "seeds": [2024, 2025, 2026],
+    "scoring": "full-catalog",
+    "paired_unit": "user",
+    "bootstrap_replicates": 10000,
+    "relative_ndcg10_gate": 0.02,
+    "recall10_regression_gate": 0.01
+  },
+  "compute": {
+    "profile": "compatibility-profile",
+    "inherit_baseline_runtime": true,
+    "no_csft_or_iem_change": true
+  }
+}

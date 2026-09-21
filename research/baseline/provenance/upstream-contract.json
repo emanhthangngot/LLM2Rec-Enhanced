@@ -1,0 +1,163 @@
+{
+  "contract_version": "2026-08-20.1",
+  "source": {
+    "repository": "https://github.com/HappyPointer/LLM2Rec",
+    "local_path": "/home/pearspringmind/NCKH/LLM2Rec/LLM2Rec",
+    "commit": "73b481f710f67166ab958f4985d27b27fb410871",
+    "branch": "main"
+  },
+  "csft": {
+    "category": "AmazonMix-6",
+    "batch_size": 128,
+    "micro_batch_size": 4,
+    "num_epochs": 10,
+    "learning_rate": 0.0003,
+    "cutoff_len": 1024,
+    "train_on_inputs": true,
+    "group_by_length": false,
+    "use_lora": false,
+    "train_from_scratch": false,
+    "official_max_steps": 10000,
+    "official_world_size": 2,
+    "single_gpu_world_size": 1,
+    "single_gpu_gradient_accumulation_steps": 32,
+    "gradient_accumulation_derivation": "batch_size / micro_batch_size = 128 / 4 = 32 optimizer accumulation steps on one GPU; this preserves effective batch size 128.",
+    "single_gpu_runtime": {
+      "torch_dtype": "float32 parameters with float16 autocast",
+      "attn_implementation": "sdpa",
+      "nproc_per_node": 1
+    },
+    "phase_03_probe": {
+      "kernel": "trixuanle/llm2rec-csft-t4-probe",
+      "version": 7,
+      "status": "COMPLETE",
+      "micro_batch_size": 2,
+      "gradient_accumulation_steps": 64,
+      "training_elapsed_seconds": 2609.92311005,
+      "seconds_per_optimizer_step": 52.198462201000005,
+      "configured_tokens_per_second": 2511.031828778453,
+      "peak_vram_gib": 12.002184867858887,
+      "logged_loss_points": 50,
+      "loss_step_1": 4.6266560554504395,
+      "loss_step_50": 3.1035101413726807,
+      "train_loss": 3.436616134643555,
+      "micro_batch_4_result": "OOM at optimizer step 1; peak 12.89 GiB",
+      "budget_branch": "C",
+      "projected_official_max_steps_hours": 144.9957283361111,
+      "approved_budget_run": {
+        "status": "approved",
+        "csft_max_steps": 1000,
+        "csft_num_train_epochs": 1,
+        "reason": "Preserve full AmazonMix-6 data and downstream signal pipeline within the current Kaggle quota.",
+        "estimated_csft_training_hours": 14.49957283361111,
+        "interpretation": "budgeted compatibility-profile; not full reproduction"
+      }
+    },
+    "source_runtime_note": "The upstream run_csft.py hardcodes torch.bfloat16 and does not expose attention implementation; the Kaggle wrapper must apply the recorded compatibility substitutions without editing the pristine clone."
+  },
+  "iem_mntp": {
+    "per_device_train_batch_size": 32,
+    "per_device_eval_batch_size": 32,
+    "gradient_accumulation_steps": 1,
+    "max_seq_length": 512,
+    "mlm_probability": 0.2,
+    "mask_token_type": "blank",
+    "line_by_line": true,
+    "gradient_checkpointing": true,
+    "evaluation_strategy": "steps",
+    "eval_steps": 100,
+    "save_steps": 100,
+    "stop_after_n_steps": 1000,
+    "torch_dtype": "bfloat16",
+    "attn_implementation": "flash_attention_2",
+    "runtime_torch_dtype": "float16",
+    "runtime_attn_implementation": "sdpa"
+  },
+  "iem_simcse": {
+    "learning_rate": 0.0002,
+    "num_train_epochs": 5,
+    "warmup_steps": 300,
+    "per_device_train_batch_size": 256,
+    "per_device_eval_batch_size": 256,
+    "gradient_accumulation_steps": 1,
+    "max_seq_length": 512,
+    "simcse_dropout": 0.2,
+    "max_grad_norm": 1.0,
+    "save_only_model": false,
+    "save_steps": 100,
+    "stop_after_n_steps": 1000,
+    "loss_scale": 10.0,
+    "bidirectional": true,
+    "pooling_mode": "mean",
+    "seed": 42,
+    "torch_dtype": "bfloat16",
+    "attn_implementation": "flash_attention_2",
+    "runtime_torch_dtype": "float16",
+    "runtime_attn_implementation": "sdpa"
+  },
+  "extraction": {
+    "dataset": "Games_5core",
+    "item_prompt_type": "title",
+    "bidirectional": 1,
+    "checkpoints": [500, 1000]
+  },
+  "downstream_sasrec": {
+    "model": "SASRec",
+    "learning_rate": 0.001,
+    "weight_decay": 0.0001,
+    "loss_type": "ce",
+    "dropout": 0.3,
+    "seeds": [0, 1, 2],
+    "scoring": "full-catalog; verify implementation in seqrec/evaluator.py"
+  },
+  "deviation_ledger": [
+    {
+      "official": "bfloat16",
+      "runtime": "float16",
+      "reason": "Kaggle T4 compatibility"
+    },
+    {
+      "official": "flash_attention_2",
+      "runtime": "sdpa",
+      "reason": "flash-attn requires a newer GPU architecture"
+    },
+    {
+      "official": "2 GPUs",
+      "runtime": "1 GPU",
+      "reason": "repo-local MCP accelerator contract exposes one GPU per kernel"
+    },
+    {
+      "official": "data-parallel effective batch",
+      "runtime": "gradient accumulation",
+      "reason": "preserve effective CSFT batch size 128 on one GPU"
+    }
+  ],
+  "dataset_inputs": {
+    "csft": "AmazonMix-6/5-core",
+    "evaluation": "Games_5core",
+    "base_model": "Qwen2-0.5B",
+    "archive": {
+      "path": "/home/pearspringmind/NCKH/LLM2Rec/datasets/LLM2Rec-datasets.zip",
+      "bytes": 406437924,
+      "sha256": "79e212348a411378f282d22a707810203d0e5fdc1938c9a175e76c4247dbb934"
+    },
+    "corpus_counts": {
+      "AmazonMix-6/5-core": {
+        "train_rows": 960757,
+        "valid_rows": 120095,
+        "test_rows": 120099,
+        "train_unique_users": 148053,
+        "train_unique_item_ids": 99712,
+        "staged_bytes": 808096644
+      },
+      "Games_5core": {
+        "train_rows": 122577,
+        "valid_rows": 15322,
+        "test_rows": 15323,
+        "train_unique_users": 18948,
+        "train_unique_item_ids": 8488,
+        "staged_bytes": 89768517
+      }
+    }
+  }
+}

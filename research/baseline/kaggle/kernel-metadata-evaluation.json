@@ -1,0 +1,17 @@
+{
+  "id": "trixuanle/llm2rec-budgeted-games-sasrec-evaluation",
+  "title": "LLM2Rec Budgeted Games SASRec Evaluation",
+  "code_file": "evaluate_games.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_tpu": false,
+  "enable_internet": true,
+  "keywords": ["llm2rec", "games-5core", "sasrec", "evaluation"],
+  "dataset_sources": ["trixuanle/llm2rec-games-5core"],
+  "kernel_sources": ["trixuanle/llm2rec-budgeted-iem-disk-retry"],
+  "competition_sources": [],
+  "model_sources": [],
+  "machine_shape": "NvidiaTeslaT4"
+}

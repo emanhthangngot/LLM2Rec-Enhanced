@@ -1,0 +1,195 @@
+{
+  "schema_version": "2026-08-24.1",
+  "name": "llm2rec-text-compatibility-baseline",
+  "verdict": "compatibility-profile",
+  "limitations": {
+    "mask_parity": "established unpatched during IEM training: log starts 2026-08-22 08:49:09 (timezone marker absent); patch commit 3bf1b9d is 2026-08-24 02:02:57 UTC / 09:02:57 +07 and first adds the SDPA mask patch; later extraction used the patched mask",
+    "comparator_scope": "only within the exact v8/v5 evaluation path"
+  },
+  "mask_arm_measurement": {
+    "artifact": "data/kaggle/runtime/llm2rec-mask-arms-v1/mask_arm_evaluation_artifact.json",
+    "checkpoint": 500,
+    "unpatched_ndcg_at_10": 0.047628410160541534,
+    "patched_ndcg_at_10": 0.04975216214855512,
+    "relative_change_percent": 4.459002475318896,
+    "seed_uniformity": "patched wins 2 of 3 seeds",
+    "per_user_ranks_saved": false,
+    "decision_basis": "mechanism fidelity; not effect-size threshold",
+    "decision": "READY_FOR_PATCHED_IEM_RERUN"
+  },
+  "source": {
+    "repository": "https://github.com/HappyPointer/LLM2Rec",
+    "commit": "73b481f710f67166ab958f4985d27b27fb410871",
+    "base_model": "Qwen/Qwen2-0.5B"
+  },
+  "compute": {
+    "platform": "Kaggle",
+    "accelerator": "NvidiaTeslaT4",
+    "gpu_count": 1,
+    "cuda_visible_devices": "0",
+    "parameter_dtype": "float32",
+    "autocast_dtype": "float16",
+    "attention": "sdpa",
+    "official_dtype": "bfloat16",
+    "official_attention": "flash_attention_2"
+  },
+  "stages": [
+    {
+      "id": "csft",
+      "script": "kaggle/csft_chain.py",
+      "kernel": "trixuanle/llm2rec-csft-budget-link-4-source",
+      "input": "trixuanle/llm2rec-amazonmix6-5core",
+      "output": "checkpoint-1000",
+      "config": {
+        "category": "AmazonMix-6",
+        "batch_size": 128,
+        "micro_batch_size": 2,
+        "gradient_accumulation_steps": 64,
+        "effective_batch_size": 128,
+        "num_epochs": 1,
+        "max_steps": 1000,
+        "learning_rate": 0.0003,
+        "cutoff_len": 1024,
+        "train_on_inputs": true,
+        "group_by_length": false,
+        "use_lora": false,
+        "train_from_scratch": false,
+        "save_steps": 100,
+        "resume_enabled": true
+      }
+    },
+    {
+      "id": "iem",
+      "script": "kaggle/iem_pipeline.py",
+      "kernel": "trixuanle/llm2rec-budgeted-iem-disk-retry",
+      "input": "csft/checkpoint-1000",
+      "outputs": ["checkpoint-500", "checkpoint-1000"],
+      "config": {
+        "mntp_steps": 1000,
+        "mntp_per_device_batch_size": 8,
+        "mntp_gradient_accumulation_steps": 4,
+        "mntp_effective_batch_size": 32,
+        "mntp_max_seq_length": 512,
+        "mntp_mlm_probability": 0.2,
+        "mntp_mask_token_type": "blank",
+        "mntp_line_by_line": true,
+        "mntp_gradient_checkpointing": true,
+        "mntp_eval_steps": 100,
+        "simcse_steps": 1000,
+        "simcse_per_device_batch_size": 32,
+        "simcse_official_batch_size": 256,
+        "simcse_gradient_accumulation_steps": 1,
+        "simcse_max_seq_length": 512,
+        "simcse_num_train_epochs": 5,
+        "simcse_max_grad_norm": 1.0,
+        "learning_rate": 0.0002,
+        "warmup_steps": 300,
+        "simcse_dropout": 0.2,
+        "loss_scale": 10.0,
+        "pooling_mode": "mean",
+        "seed": 42,
+        "bidirectional": true,
+        "save_steps": [500, 1000],
+        "save_only_model": true,
+        "tokenizer_override": true
+      }
+    },
+    {
+      "id": "evaluation",
+      "script": "kaggle/evaluate_games.py",
+      "kernel": "trixuanle/llm2rec-budgeted-games-sasrec-evaluation",
+      "kernel_version": 8,
+      "input": "trixuanle/llm2rec-games-5core",
+      "config": {
+        "dataset": "Games_5core",
+        "item_prompt_type": "title",
+        "bidirectional": 1,
+        "extraction_batch_size": 16,
+        "checkpoints": [500, 1000],
+        "sasrec_model": "SASRec",
+        "learning_rate": 0.001,
+        "weight_decay": 0.0001,
+        "dropout": 0.3,
+        "loss_type": "ce",
+        "seeds": [2024, 2025, 2026],
+        "full_catalog_scoring": true
+      }
+    },
+    {
+      "id": "audit",
+      "script": "kaggle/audit_games.py",
+      "kernel": "trixuanle/llm2rec-games-raw-rank-and-bidirectional-audit",
+      "kernel_version": 5,
+      "input": "evaluation + IEM + Games_5core",
+      "outputs": [
+        "llm2rec_audit_artifact.json",
+        "raw_ranks_step{500,1000}_seed{2024,2025,2026}.npz"
+      ],
+      "config": {
+        "raw_rank_tolerance": 1e-8,
+        "required_users": 15323,
+        "required_top_k": 20,
+        "require_finite_values": true
+      }
+    }
+  ],
+  "fidelity_gates": {
+    "llm2vec_version": "0.2.3",
+    "transformers_version": "4.44.2",
+    "qwen2_model_class": "Qwen2BiModel",
+    "attention_is_causal": false,
+    "future_token_delta_min_abs": 1e-6,
+    "embedding_dtype": "float32",
+    "embedding_nan_count": 0,
+    "embedding_inf_count": 0,
+    "embedding_zero_row_count": 0,
+    "raw_rank_recomputation_tolerance": 1e-8
+  },
+  "deviations": [
+    {
+      "official": "CSFT max_steps=10000",
+      "runtime": "CSFT max_steps=1000",
+      "reason": "Kaggle GPU quota; full AmazonMix-6 data retained"
+    },
+    {
+      "official": "bfloat16",
+      "runtime": "float16 autocast with float32 parameters",
+      "reason": "T4 compatibility"
+    },
+    {
+      "official": "flash_attention_2",
+      "runtime": "sdpa",
+      "reason": "T4 architecture compatibility"
+    },
+    {
+      "official": "2 GPUs",
+      "runtime": "1 T4 GPU",
+      "reason": "Kaggle MCP accelerator contract"
+    },
+    {
+      "official": "SimCSE batch_size=256",
+      "runtime": "SimCSE batch_size=32",
+      "reason": "T4 memory; gradient accumulation does not increase in-batch negatives"
+    }
+  ],
+  "verified_metrics": {
+    "step_500": {
+      "ndcg@10": 0.04975216214855512,
+      "recall@10": 0.08207705120245616,
+      "ndcg@20": 0.056554569552342095,
+      "recall@20": 0.10907350728909175
+    },
+    "step_1000": {
+      "ndcg@10": 0.050377074629068375,
+      "recall@10": 0.08205529799064,
+      "ndcg@20": 0.05719099069635073,
+      "recall@20": 0.10911701371272405
+    }
+  },
+  "evidence": {
+    "evaluation_artifact": "data/kaggle/runtime/llm2rec-eval-bidirectional-v8-complete/games_evaluation_artifact.json",
+    "audit_artifact": "data/kaggle/runtime/llm2rec-audit-v5-complete/llm2rec_audit_artifact.json",
+    "evaluation_url": "https://www.kaggle.com/code/trixuanle/llm2rec-budgeted-games-sasrec-evaluation",
+    "audit_url": "https://www.kaggle.com/code/trixuanle/llm2rec-games-raw-rank-and-bidirectional-audit"
+  }
+}
