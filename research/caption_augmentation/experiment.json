@@ -1,0 +1,74 @@
+{
+  "schema_version": "2026-09-15.1",
+  "plan": "plans/260915-0955-visual-delta-fusion-pilot/plan.md",
+  "arms": ["title-only", "null", "real", "shuffle", "paraphrase"],
+  "primary_cue_cap_tokens": 32,
+  "cue_cap_sensitivities_tokens": [16, 64],
+  "bin_size": 64,
+  "max_csft_tokens": 1024,
+  "seeds": {
+    "chain_seeds": [2024, 2025, 2026],
+    "shuffle_seed_by_chain": {"2024": 7001, "2025": 7002, "2026": 7003}
+  },
+  "captioner": {
+    "model_id": "microsoft/Florence-2-large",
+    "task_prompt": "<CAPTION>",
+    "max_new_tokens": 128,
+    "num_beams": 3,
+    "do_sample": false,
+    "attn_implementation": "sdpa",
+    "flash_attn_static_scan_patch": "transformers.dynamic_module_utils.get_imports is scoped-patched during from_pretrained to drop the string 'flash_attn' from the returned requirement list. Evidence-backed, not assumed: the remote modeling_florence2.py imports flash_attn only inside `if is_flash_attn_2_available():` guards and dispatches attention via `FLORENCE2_ATTENTION_CLASSES[config._attn_implementation]`; attn_implementation is pinned to sdpa above so that branch never executes. Kaggle's T4 (sm_75) and P100 (sm_60) are both below FlashAttention-2's sm_80 requirement, so installing flash_attn is not a viable alternative. See ISSUES.md #12.",
+    "resolved_revision": "f0acedbf9b780e04fe1f9111fcf53187388f3d03",
+    "resolved_revision_fallback": "21a599d414c4d928c9032694c424fb94458e3594",
+    "resolved_revision_note": "primary = last commit before the 2024-12-08 continued-pretrain weight swap (original FLD-5B weights, matches published benchmark table, no 'might not be trained well' card caveat). fallback = current main (continued-pretrained, card-flagged); use only if primary fails to load and report the caveat explicitly. See ISSUES.md #7."
+  },
+  "paraphraser": {
+    "model_id": "Qwen/Qwen2.5-3B-Instruct",
+    "max_new_tokens": 128,
+    "do_sample": false,
+    "resolved_revision": "aa8e72537993ba99e69dfaafa59ed015b17504d1",
+    "license": "qwen-research",
+    "selection_note": "Approved after real 300-item title-only probe: 1/300 clear unsupported additions (0.33%), versus approximately 54/300 (18%) for Qwen2.5-0.5B-Instruct. Remaining fidelity concerns and the non-Apache license must be disclosed. See ISSUES.md #16."
+  },
+  "tokenizer": {
+    "model_id": "Qwen/Qwen2-0.5B",
+    "resolved_revision": "91d2aff3f957f99e4c74c962f2f408dcc88a18d8"
+  },
+  "runtime": {
+    "transformers": "4.44.2",
+    "note": "proven pin already used across this research family's completed Kaggle CSFT/IEM/visual-signal runs; see experiments/multimodal_llm_rs/kaggle/llm2rec-visual/visual_signal.py ensure_runtime_dependencies"
+  },
+  "budget": {
+    "gpu_hours_cap": 30,
+    "approval_status": "approved",
+    "approved_on": "2026-09-15",
+    "scope": "full corpus generation, tiny end-to-end validation, and full training matrix",
+    "stop_rule": "Do not start a new job if projected cumulative GPU-hours would exceed 30; stop scheduling before the cap and preserve completed artifacts."
+  },
+  "datasets": {
+    "development": "Video_Games",
+    "replication": "Arts",
+    "pretraining": "AmazonMix-6",
+    "reserved_holdout": "Baby (owned by plans/260911-1037-visual-fusion-reality-check; never read here)"
+  },
+  "stage_placement_profiles": [
+    "title-only", "null", "real", "shuffle", "paraphrase",
+    "late-text", "csft-only", "native-title",
+    "real-cap16", "real-cap64"
+  ],
+  "quality_gates": {
+    "image_coverage_minimum": 0.95,
+    "paraphrase_fidelity_minimum": 0.95,
+    "caption_unsupported_attribute_maximum": 0.10
+  },
+  "archive": {
+    "sha256": "79e212348a411378f282d22a707810203d0e5fdc1938c9a175e76c4247dbb934",
+    "source_repository": "https://github.com/HappyPointer/LLM2Rec",
+    "source_commit": "73b481f710f67166ab958f4985d27b27fb410871"
+  },
+  "amazonmix6_domains": [
+    "Arts_Crafts_and_Sewing", "Electronics", "Home_and_Kitchen",
+    "Video_Games", "Movies_and_TV", "Tools_and_Home_Improvement"
+  ],
+  "resolved_revisions_note": "revisions above were resolved from live HF API/commit-history evidence on 2026-09-15 (see ISSUES.md #7); real-runtime load must still be verified in the Kaggle smoke run before corpus generation."
+}

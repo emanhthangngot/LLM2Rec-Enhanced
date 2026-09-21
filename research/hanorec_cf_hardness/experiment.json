@@ -1,0 +1,49 @@
+{
+  "seed": 2024,
+  "top_m": 20,
+  "train_pairs": 530,
+  "eval_users": 265,
+  "validation_users": 265,
+  "history_items": 3,
+  "batch_size": 4,
+  "gradient_accumulation_steps": 8,
+  "learning_rate": 0.0001,
+  "sft_epochs": 5,
+  "dpo_epochs": 5,
+  "drop_last": true,
+  "precision": "bf16",
+  "model_id": "Qwen/Qwen2.5-VL-3B-Instruct",
+  "model_revision": "66285546d2b821cf421d4f5eb2576359d3770cd3",
+  "weights": [1.0, 0.0, 0.5],
+  "noise_sigma": 0.05,
+  "beta0": 0.1,
+  "beta_floor": 1.0e-6,
+  "max_pixels": 262144,
+  "budget_seconds": 6600,
+  "upstream": {
+    "llm2rec": {
+      "url": "https://codeload.github.com/HappyPointer/LLM2Rec/zip/73b481f710f67166ab958f4985d27b27fb410871",
+      "sha256": "6bcee7b09ec9ad5fa0107a083c7b8060abbead23e1264a49480906de638c1cc8",
+      "commit": "73b481f710f67166ab958f4985d27b27fb410871"
+    },
+    "hanorec": {
+      "url": "https://codeload.github.com/wangyu0627/HaNoRec/zip/587face74524e4553b5a7aa295fe962004682382",
+      "sha256": "48c52e5625cd4e25e80600fed9bed8aad8906556d267b87d52890b49bf33d6a6",
+      "commit": "587face74524e4553b5a7aa295fe962004682382"
+    }
+  },
+  "artifact_pins": {
+    "data.txt": "48c7ead98abfa73c506bf7af133703f2ee7e922167d922760bb074376639a72c",
+    "train_data.txt": "1300e5deec29d4bede6e32bfa1a5eade563f53a6916da95d67754ec40b9475b8",
+    "val_data.txt": "484a97cfbcff2a78e92612b15863ce08c84c285c7bfb325ec1f33d3884e6de16",
+    "test_data.txt": "80074ffea37928d92c35038e9d8bbf3de0cfcf01308ae4173e3c680c1bc50d1f",
+    "item_titles.json": "17f501809c4159905cfa6dfa5626d3d52d0be32bc9747ee89b003662f6f5e84c",
+    "LLM2Rec-budgeted-|kaggle|working|LLM2Rec|repeated_evaluate_with_seq-Sep-09-2026_11-12-13-c93f12.pth": "fb0d1d3916f10b5b6f0d9f597e7b2ac8437f445c15629ebf3099333b72806a59",
+    "Qwen2-0.5B-LLM2Rec-IEM-budgeted_step500_title_item_embs.npy": "89f9d3dd17f9ec49537f910e39c9761878299f7d24abdcf805ab0db91433c0f0",
+    "games_sasrec_step500.log": "a60181a26114072dd5442fd9ffe4b338505010d8b321d9e31ca1646b341ff154",
+    "Video_Games_image_manifest.jsonl": "5d9c586d2d05c6ff208c7a0f945a441a4fc60ef0d18ec8aacc269fbf67a42d04"
+  },
+  "checkpoint_name": "LLM2Rec-budgeted-|kaggle|working|LLM2Rec|repeated_evaluate_with_seq-Sep-09-2026_11-12-13-c93f12.pth",
+  "embedding_name": "Qwen2-0.5B-LLM2Rec-IEM-budgeted_step500_title_item_embs.npy",
+  "purpose": "corrected Games adaptation; full signal requires Phase 3 quota gate"
+}
