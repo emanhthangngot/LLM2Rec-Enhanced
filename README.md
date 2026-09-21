@@ -27,16 +27,16 @@ Two structural lessons carry across every generation:
 
 ## Version Generations
 
-| Version | Codename | Core Idea | Status | Dataset(s) | Headline Result |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **v0** | `LLM2Rec-Baseline` | Faithful text-only compatibility reproduction (CSFT → MNTP → SimCSE → SASRec/GRU4Rec/BERT4Rec) under a single-T4 compute budget | Closed — reference | Games (dev), Arts (replication), AmazonMix-6 (pretrain) | NDCG@10 `0.0498` vs. paper `0.0521` (`-3.3%` to `-4.5%` gap) |
-| **v9.0** | `Additive-Item-Fusion` | CLIP image feature → MLP → summed directly into the item embedding | **Rejected** | Games / SASRec | Real-vs-shuffle NDCG@10 swings `-16.3%` to `+1.8%`; random visual input alone damages ranking |
-| **v9.1** | `Sequence-Side-Fusion` (S1/S2) | Visual signal folded into the user-sequence hidden state | **Rejected** | Games / SASRec | `92%` of the apparent gain traced to `740` immediate-repeat rows; a recency-only reranker with no image input beats it on all 3 seeds |
-| **v9.2** | `Frozen-Score-Residual` (I1‑A → C0.5, 10 sub-experiments) | `score_final = score_text + α·z_visual` at the ranking boundary; text recommender and candidate table stay frozen | **Closed — conditional positive, program exhausted (`STOP2`)** | Games (SASRec, BERT4Rec, GRU4Rec stress test), Sports (transfer) | `PASS` on Games/BERT4Rec (`+7.2%` NDCG@10 vs. text) and the C0.5 matched-shuffle contrast (`+0.0015` NDCG@10, 95% CI above zero); `FAIL` on Sports transfer and on GRU4Rec, where a text-PCA control beats real visual |
-| **v10** *(active)* | `Caption-Augmentation` | Florence‑2 offline image→text captions injected into CSFT/MNTP/SimCSE input history via 5 controlled arms (`title-only`/`null`/`real`/`shuffle`/`paraphrase`) | **Running — corpus generation resumed, no downstream training yet** | Games (dev), Arts (replication), AmazonMix-6 (pretrain); Baby reserved sealed, untouched | No conclusion yet. Last independently audited push: `67,929 / 108,753` catalog records captioned |
-| **v11** *(active)* | `HaNoRec-CF-Hardness` | Freeze LLM2Rec + SASRec; blend a CF score margin (`w ∈ {1.0, 0.5, 0.0}`) with HaNoRec's semantic hardness to weight a DPO-tuned Qwen2.5‑VL reranker over SASRec's real top‑20 | **Running — SFT + 6 branch kernels mid-verification** | Games only (frozen checkpoints only exist here) | No conclusion yet. 5x calibration run (`40` pairs / `20` users) completed; full-scale run (`530` pairs / `265` eval users, 6 arms) pending |
+| Version | Codename | Core Idea | Status | Dataset(s) | Backbone(s) | Result vs. Baseline |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **v0** | `LLM2Rec-Baseline` | Faithful text-only compatibility reproduction (CSFT → MNTP → SimCSE → SASRec/GRU4Rec/BERT4Rec) under a single-T4 compute budget | Closed — reference | Games (dev), Arts (replication), AmazonMix-6 (pretrain) | SASRec, GRU4Rec, BERT4Rec | NDCG@10 `0.0504` (IEM ckpt-1000) vs. paper `0.0521` (`-3.3%` gap) |
+| **v9.0** | `Additive-Item-Fusion` | CLIP image feature → MLP → summed directly into the item embedding | **Rejected** | Games | SASRec | Real-vs-shuffle NDCG@10 swings `-16.3%` to `+1.8%`; random visual input alone damages ranking |
+| **v9.1** | `Sequence-Side-Fusion` (S1/S2) | Visual signal folded into the user-sequence hidden state | **Rejected** | Games | SASRec | `92%` of the apparent gain traced to `740` immediate-repeat rows; a recency-only reranker with no image input beats it on all 3 seeds |
+| **v9.2** | `Frozen-Score-Residual` (I1‑A → C0.5, 10 sub-experiments) | `score_final = score_text + α·z_visual` at the ranking boundary; text recommender and candidate table stay frozen | **Closed — conditional positive, program exhausted (`STOP2`)** | Games (dev), Sports (transfer) | SASRec, BERT4Rec, GRU4Rec (stress test) | `PASS` on Games/BERT4Rec (`+7.2%` NDCG@10 vs. text) and the C0.5 matched-shuffle contrast (`+0.0015` NDCG@10, 95% CI above zero); `FAIL` on Sports transfer and on GRU4Rec, where a text-PCA control beats real visual |
+| **v10** *(active)* | `Caption-Augmentation` | Florence‑2 offline image→text captions injected into CSFT/MNTP/SimCSE input history via 5 controlled arms (`title-only`/`null`/`real`/`shuffle`/`paraphrase`) | **Running — corpus generation resumed, no downstream training yet** | Games (dev), Arts (replication), AmazonMix-6 (pretrain); Baby reserved sealed | SASRec (matched) | — |
+| **v11** *(active)* | `HaNoRec-CF-Hardness` | Freeze LLM2Rec + SASRec; blend a CF score margin (`w ∈ {1.0, 0.5, 0.0}`) with HaNoRec's semantic hardness to weight a DPO-tuned Qwen2.5‑VL reranker over SASRec's real top‑20 | **Running — SFT + 6 branch kernels mid-verification** | Games only | Qwen2.5-VL reranker over SASRec | — |
 
-`v10` and `v11` are the two directions currently being executed. Both inherit the discipline established by `v0`–`v9.2`: frozen upstream checkpoints where possible, matched non-semantic controls, seed-paired bootstrap, and a hard rule that corpus completion, a running kernel, or a positive training loss is **not** evidence of effectiveness.
+Blank cells in the last column are intentional: `v10`/`v11` have not cleared the matched-control gate that every closed generation above was required to pass before a result was recorded (see `AGENTS.md`: "No fabricated citations. If a claim lacks a source, write `(unsourced)`."). `v10` and `v11` inherit the same discipline as `v0`–`v9.2`: frozen upstream checkpoints where possible, matched non-semantic controls, seed-paired bootstrap, and a hard rule that corpus completion, a running kernel, or a positive training loss is not itself evidence of effectiveness.
 
 ---
 
@@ -46,67 +46,129 @@ Two structural lessons carry across every generation:
 
 ```mermaid
 flowchart LR
-    A[AmazonMix-6 item titles] --> B[CSFT on Qwen2-0.5B]
-    B --> C[MNTP]
-    C --> D[SimCSE]
-    D --> E[Item embedding table]
-    E --> F[Adapter]
+    subgraph Pretrain["Upstream LLM2Rec (v0)"]
+        A[AmazonMix-6 item titles] --> B["Stage 1: CSFT on Qwen2-0.5B"]
+        B --> C["Stage 2a: MNTP (bidirectional)"]
+        C --> D["Stage 2b: SimCSE / item-level contrastive"]
+        D --> E[Item embedding table]
+    end
+    E --> F[Adapter, 128-d projection]
     F --> G[SASRec / GRU4Rec / BERT4Rec]
     G --> H[Full-catalog ranking]
 ```
 
-### v9.2 — Frozen score-level residual (closed, conditional positive)
+Every version below inserts its intervention at a different point in this backbone, which is exactly what makes the comparisons across generations legible: `v9.0` at `E` (item embedding), `v9.1` inside `G` (sequence state), `v9.2` after `H` (score boundary), `v10` before `B` (CSFT input text), `v11` after `H` (reranking a frozen `H`'s candidates).
+
+### v9.0 — Additive item-embedding fusion (rejected)
 
 ```mermaid
 flowchart LR
-    A[Text user state] --> B[score_text]
-    C[User visual history] --> D[Recency-weighted visual profile]
-    E[CLIP item embedding] --> F[Cosine similarity]
-    D --> F
-    F --> G[Standardize -> z_visual]
-    B --> H["score_final = score_text + alpha * z_visual"]
+    A[CLIP image embedding, 512-d] --> B[Trainable MLP, ~575K params]
+    C[Text item embedding, from E] --> D["item_embedding_final = text + MLP(image)"]
+    B --> D
+    D --> E[SASRec candidate table]
+    E --> F[Full-catalog ranking]
+    style D fill:#ffe0e0,stroke:#c00
+```
+
+Rejected because the visual branch (`~575K` params) is `5x` larger than the text adapter (`~115K` params) it is added to, so it dominates and reshapes the candidate geometry instead of augmenting it — confirmed by a **shuffled** (mismatched item-image) visual branch damaging ranking almost as much as the real one.
+
+### v9.1 — Sequence-side fusion, S1/S2 (rejected)
+
+```mermaid
+flowchart LR
+    A[User history images] --> B[Visual history encoder]
+    C[User history text] --> D[Text sequence encoder]
+    B --> E[Fused user-sequence state]
+    D --> E
+    E --> F[SASRec scoring head]
+    F --> G[Full-catalog ranking]
+    G --> H{Split by target type}
+    H --> I[Immediate-repeat rows, 740/15323]
+    H --> J[Novel-item rows, 14583/15323]
+    style E fill:#ffe0e0,stroke:#c00
+```
+
+Rejected because `92%` of the apparent gain lived in the immediate-repeat slice `I`, where a plain recency reranker (no image input at all) already wins — the fused state `E` was learning "copy the last item," not visual semantics.
+
+### v9.2 — Frozen score-level residual (closed, conditional positive)
+
+```mermaid
+flowchart TB
+    subgraph TextPath["Text path — frozen after training"]
+        A[Text user state] --> B[score_text]
+    end
+    subgraph VisualPath["Visual path — no gradient into text model"]
+        C[User visual history] --> D[Recency-weighted visual profile]
+        E[CLIP item embedding] --> F[Cosine similarity]
+        D --> F
+        F --> G["Standardize -> z_visual"]
+    end
+    B --> H["score_final(u,i) = score_text(u,i) + alpha * z_visual(u,i)"]
     G --> H
     H --> I[Full-catalog ranking]
+    I --> J{"alpha = 0 ?"}
+    J -->|yes| K[Must equal text-only ranking exactly - G0 parity check]
+    J -->|no| L[Validation-selected alpha, test labels never used]
 ```
+
+The `alpha = 0` parity check (`J` → `K`) is the invariant that makes this design auditable: every sub-experiment in the `v9.2` family (`I1-A`, patched rerun, joint-trained, `R1` controls, exposure-gated, `C0.5`) reuses this exact diagram and only changes how `z_visual` or `alpha` is fit.
 
 ### v10 — Caption augmentation (active)
 
 ```mermaid
-flowchart LR
-    A[AmazonMix-6 titles + item IDs] --> D[Immutable catalog order]
-    B[Catalog images] --> E[Florence-2-large caption, offline]
-    A --> F[Qwen2.5-3B title-only paraphrase control]
-    D --> G[5 arm-specific item texts]
-    E --> G
-    F --> G
-    G --> H[Common retained history suffix]
-    H --> I[CSFT; original title stays the target]
-    I --> J[MNTP] --> K[SimCSE] --> L[Item embeddings]
-    L --> M[Matched SASRec]
-    M --> N[Full-catalog ranking + paired-seed uncertainty audit]
+flowchart TB
+    subgraph Corpus["Offline corpus generation (per catalog item i)"]
+        A[AmazonMix-6 titles + item IDs] --> D[Immutable catalog order]
+        B[Catalog image] --> E["Florence-2-large, prompt: &lt;CAPTION&gt;"]
+        A --> F["Qwen2.5-3B title-only paraphrase, no image"]
+    end
+    subgraph Arms["5 arm-specific item texts, same history-retention policy"]
+        D --> G1[title-only: T_i]
+        D --> G2["null: T_i + 'unavailable'"]
+        E --> G3["real: T_i + caption(image_i)"]
+        E --> G4["shuffle: T_i + caption(image_perm(i))"]
+        F --> G5["paraphrase: T_i + paraphrase(T_i)"]
+    end
+    G1 & G2 & G3 & G4 & G5 --> H[Common retained history suffix]
+    H --> I["CSFT — target stays original title"]
+    I --> J[MNTP] --> K[SimCSE] --> L[Item embeddings per arm]
+    L --> M[Matched SASRec, identical config per arm]
+    M --> N[Full-catalog ranking]
+    N --> O["Paired-seed uncertainty audit: real vs each control"]
 ```
+
+The five arms in `Arms` are five causal contrasts sharing one pipeline, not five different pipelines: `real` vs `shuffle` isolates whether the image is linked to the *correct* item; `real` vs `paraphrase` isolates whether the gain is "more text" rather than "visual evidence."
 
 ### v11 — HaNoRec CF/history-aware hardness (active)
 
 ```mermaid
-flowchart LR
-    A[Frozen LLM2Rec title embeddings] --> B[Frozen SASRec]
-    C[Train histories + targets] --> B
-    B --> D[Hardest non-target negative per user]
-    B --> E[Real top-20 test candidates]
-    F[Item titles + images] --> G[Qwen2.5-VL semantic embeddings]
-    G --> H[HaRS semantic hardness]
-    D --> I[CF score margin]
-    H --> J[Geometric mixture by w]
-    I --> J
-    C --> K[Qwen2.5-VL LoRA SFT]
-    J --> L[Hardness-scaled DPO]
-    K --> L
-    L --> M[Yes-minus-No candidate score]
+flowchart TB
+    subgraph Frozen["Frozen retrieval stage — no gradient here"]
+        A[Frozen LLM2Rec title embeddings] --> B[Frozen SASRec]
+        C[Train histories + targets] --> B
+        B --> D[Hardest non-target negative per user]
+        B --> E[Real top-20 test candidates]
+    end
+    subgraph Hardness["Hardness signal construction"]
+        F[Item titles + images] --> G[Qwen2.5-VL semantic embeddings]
+        G --> H["HaRS semantic hardness, lambda_sem"]
+        D --> I["CF score margin: m_CF = score(i+) - score(i-)"]
+        H --> J["Geometric mixture by w in {1.0, 0.5, 0.0}"]
+        I --> J
+    end
+    subgraph Reranker["Qwen2.5-VL reranker training"]
+        C --> K[Qwen2.5-VL LoRA SFT]
+        J --> L[Hardness-scaled DPO]
+        K --> L
+    end
+    L --> M["Yes-minus-No candidate score"]
     E --> M
     M --> N[Reranked top-20]
     N --> O[NDCG@10 / Recall@10 / candidate Recall@20]
 ```
+
+`w = 1.0` uses pure CF hardness, `w = 0.0` uses pure HaNoRec semantic hardness, `w = 0.5` mixes both — the six branch kernels are `{w} x {real, shuffle}`, where `shuffle` breaks the item-image link the same way it does in `v10`, to isolate whether the hardness signal is doing anything beyond a generic difficulty prior.
 
 ---
 
@@ -127,6 +189,43 @@ Backbone choice follows the same anti-cherry-picking logic on a second axis: `SA
 **Where `v10` and `v11` currently sit on this map:**
 - `v10` (caption augmentation) follows the full discipline: Games for development, Arts for in-domain replication, AmazonMix-6 for pretraining everywhere, and Baby reserved untouched for a later, separate confirmation run.
 - `v11` (HaNoRec CF-hardness) currently runs on **Games only**, because it depends on the frozen, already-audited LLM2Rec+SASRec checkpoint pair that only exists for that dataset. Extending it to Arts/Sports/Baby is explicit future work, not yet started — stated here rather than implied.
+
+---
+
+## SOTA Landscape (published results, same benchmark family)
+
+To put `v0`'s reproduction gap and the closed/active generations above in context, this table reproduces the upstream paper's own baseline comparison — Table 3 of He et al. (2025), SASRec downstream, full-catalog `Recall@K`/`NDCG@K` — verbatim from `raw/rs-llm/…LLM2Rec…pdf` in the parent workspace, plus this fork's `v0` reproduction row for direct comparison. General-purpose text encoders (`BERT`, `GTE`, `BGE`, `LLM2Vec`) and recommendation-specific embedding models (`BLAIR`, `EasyRec`, `LLMEmb`) are included so the landscape isn't just "our baseline vs. our extensions."
+
+**Games (in-domain)**
+
+| Model | R@10 | N@10 | R@20 | N@20 | Source |
+| :--- | ---: | ---: | ---: | ---: | :--- |
+| BERT | 0.0585 | 0.0311 | 0.0863 | 0.0381 | Paper Table 3 |
+| GTE | 0.0641 | 0.0349 | 0.0911 | 0.0418 | Paper Table 3 |
+| BLAIR (recommendation-specific) | 0.0654 | 0.0361 | 0.0954 | 0.0437 | Paper Table 3 |
+| EasyRec (recommendation-specific) | 0.0647 | 0.0357 | 0.0926 | 0.0428 | Paper Table 3 |
+| BGE | 0.0733 | 0.0410 | 0.1022 | 0.0483 | Paper Table 3 |
+| LLM2Vec | 0.0740 | 0.0407 | 0.1029 | 0.0480 | Paper Table 3 |
+| LLMEmb (recommendation-specific) | 0.0813 | 0.0487 | 0.1085 | 0.0555 | Paper Table 3 |
+| **LLM2Rec (paper, official, Qwen2-0.5B, full compute)** | **0.0865** | **0.0521** | **0.1157** | **0.0595** | Paper Table 3 |
+| **LLM2Rec (this fork's `v0`, T4 compatibility reproduction, IEM ckpt-1000)** | 0.0821 | 0.0504 | — | — | `docs/reports/llm2rec-final-teacher-report.md` §3.1 |
+
+**Sports (out-of-domain, excluded from CSFT pretraining)**
+
+| Model | R@10 | N@10 | R@20 | N@20 | Source |
+| :--- | ---: | ---: | ---: | ---: | :--- |
+| GTE | 0.0823 | 0.0584 | 0.1001 | 0.0629 | Paper Table 3 |
+| BLAIR (recommendation-specific) | 0.0893 | 0.0614 | 0.1091 | 0.0664 | Paper Table 3 |
+| EasyRec (recommendation-specific) | 0.0887 | 0.0627 | 0.1061 | 0.0671 | Paper Table 3 |
+| BERT | 0.0860 | 0.0649 | 0.1017 | 0.0689 | Paper Table 3 |
+| BGE | 0.0974 | 0.0736 | 0.1141 | 0.0778 | Paper Table 3 |
+| LLM2Vec | 0.1079 | 0.0854 | 0.1234 | 0.0893 | Paper Table 3 |
+| LLMEmb (recommendation-specific) | 0.1131 | 0.0936 | 0.1257 | 0.0969 | Paper Table 3 |
+| **LLM2Rec (paper, official)** | **0.1170** | **0.0976** | **0.1289** | **0.1006** | Paper Table 3 |
+
+Two caveats, stated rather than smoothed over:
+1. This landscape uses the paper's own **aggregate** full-catalog protocol (all targets, immediate-repeat included). The `v9.2` family's Games/Sports numbers earlier in this README use a **novel-target-only, repeat-debiased** protocol instead, discovered necessary precisely because aggregate metrics were found to hide an immediate-repeat confound (see `v9.1`). The two protocols are not directly comparable row-for-row — only `v0`'s reproduction row above uses the paper's own aggregate protocol, which is why it is the only fork row placed in this table.
+2. `v0`'s `R@20`/`N@20` are left blank (`—`): the compatibility-baseline reports in `docs/reports/` only record `R@10`/`N@10` for this checkpoint; inventing the `@20` figures would violate this fork's no-fabrication rule rather than leave a documented gap.
 
 ---
 
