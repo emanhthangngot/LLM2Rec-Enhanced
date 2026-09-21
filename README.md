@@ -208,7 +208,7 @@ To put `v0`'s reproduction gap and the closed/active generations above in contex
 | LLM2Vec | 0.0740 | 0.0407 | 0.1029 | 0.0480 | Paper Table 3 |
 | LLMEmb (recommendation-specific) | 0.0813 | 0.0487 | 0.1085 | 0.0555 | Paper Table 3 |
 | **LLM2Rec (paper, official, Qwen2-0.5B, full compute)** | **0.0865** | **0.0521** | **0.1157** | **0.0595** | Paper Table 3 |
-| **LLM2Rec (this fork's `v0`, T4 compatibility reproduction, IEM ckpt-1000)** | 0.0821 | 0.0504 | — | — | `docs/reports/llm2rec-final-teacher-report.md` §3.1 |
+| **LLM2Rec (this fork's `v0`, T4 compatibility reproduction, IEM ckpt-1000)** | 0.0821 | 0.0504 | 0.1091 | 0.0572 | `docs/reports/llm2rec-final-teacher-report.md` §3.1, cross-checked against the independent raw-rank audit |
 
 **Sports (out-of-domain, excluded from CSFT pretraining)**
 
@@ -223,9 +223,113 @@ To put `v0`'s reproduction gap and the closed/active generations above in contex
 | LLMEmb (recommendation-specific) | 0.1131 | 0.0936 | 0.1257 | 0.0969 | Paper Table 3 |
 | **LLM2Rec (paper, official)** | **0.1170** | **0.0976** | **0.1289** | **0.1006** | Paper Table 3 |
 
-Two caveats, stated rather than smoothed over:
-1. This landscape uses the paper's own **aggregate** full-catalog protocol (all targets, immediate-repeat included). The `v9.2` family's Games/Sports numbers earlier in this README use a **novel-target-only, repeat-debiased** protocol instead, discovered necessary precisely because aggregate metrics were found to hide an immediate-repeat confound (see `v9.1`). The two protocols are not directly comparable row-for-row — only `v0`'s reproduction row above uses the paper's own aggregate protocol, which is why it is the only fork row placed in this table.
-2. `v0`'s `R@20`/`N@20` are left blank (`—`): the compatibility-baseline reports in `docs/reports/` only record `R@10`/`N@10` for this checkpoint; inventing the `@20` figures would violate this fork's no-fabrication rule rather than leave a documented gap.
+One caveat, stated rather than smoothed over: this landscape uses the paper's own **aggregate** full-catalog protocol (all targets, immediate-repeat included). The `v9.2` family's Games/Sports numbers in the Comprehensive Experimental Benchmark below use a **novel-target-only, repeat-debiased** protocol instead, discovered necessary precisely because aggregate metrics were found to hide an immediate-repeat confound (see `v9.1`). The two protocols are not directly comparable row-for-row — only `v0`'s reproduction row above uses the paper's own aggregate protocol, which is why it is the only fork row placed in this table.
+
+---
+
+## Comprehensive Experimental Benchmark
+
+Every closed generation (`v0`, `v9.0`, `v9.1`, `v9.2`) has a recorded result; they are reproduced below **exactly as measured**, grouped by the protocol/comparator/backbone each one actually used — these are not interchangeable, so they are not merged into one misleadingly uniform table (see the caveat above). `v10`/`v11` have no rows here yet, matching their `—` cells in the version table. Every table states its baseline explicitly and reports `vs. baseline` first; blank cells mean that metric was not recorded in this fork's own reports, not that it was zero.
+
+### v0 — Text-only baseline (reference for every later generation)
+
+| IEM checkpoint | NDCG@10 | Recall@10 | NDCG@20 | Recall@20 | vs. paper (NDCG@10) |
+| :--- | ---: | ---: | ---: | ---: | ---: |
+| 500 | 0.04975 | 0.08208 | 0.05655 | 0.10907 | `-4.51%` |
+| **1000 (used as `v0` baseline everywhere below)** | **0.05038** | **0.08206** | **0.05719** | **0.10912** | **`-3.31%`** |
+| Paper (official, full compute) | 0.0521 | 0.0865 | 0.0595 | 0.1157 | — |
+
+A second, independently retrained "patched-IEM" checkpoint (fixing a bidirectional-attention bug found mid-program) is used as the comparator for every `v9.2` sub-experiment below instead of the row above — reusing the pre-patch numbers as a baseline for post-patch results would misattribute the patch's own effect to the visual intervention:
+
+| Patched-IEM checkpoint | NDCG@10 | Recall@10 |
+| :--- | ---: | ---: |
+| 500 | 0.04637 | 0.07818 |
+| 1000 | 0.04750 | 0.07944 |
+
+### v9.0 — Additive item-embedding fusion, Games/SASRec (rejected)
+
+| Arm | NDCG@10 (all test rows) | vs. text baseline |
+| :--- | ---: | ---: |
+| T-null (text baseline) | 0.048886 | — |
+| T-mask | 0.048247 | `-1.31%` |
+| L-shuffle (mismatched image) | 0.042679 | `-12.68%` |
+| L-real (correct image) | 0.040156 | `-17.86%` |
+
+Real visual is worse than both text and shuffle on the aggregate metric — the headline reason `v9.0` was rejected. A later re-slice by target type found the opposite sign on novel-only targets (`L-real` `+29.57%` vs. text, `+11.19%` vs. shuffle), which is reported as a methodological finding about immediate-repeat contamination, not a rehabilitation of the additive-fusion design (its training arms and insertion geometry stay confounded either way).
+
+### v9.2 — Frozen score-level residual family, Games (closed, conditional positive)
+
+**I1‑A / patched frozen rerun, SASRec, patched-IEM comparator, aggregate protocol:**
+
+| Arm | NDCG@10 | vs. text | Recall@10 | vs. text |
+| :--- | ---: | ---: | ---: | ---: |
+| Patched text (baseline) | 0.046366 | — | 0.078183 | — |
+| Mean matched shuffle | 0.056748 | `+22.39%` | 0.083397 | `+6.67%` |
+| **Real visual** | **0.057412** | **`+23.82%`** | **0.090605** | **`+15.89%`** |
+
+Real beats matched shuffle by only `+1.17%` NDCG@10 (95% CI `[-0.000628, +0.001962]`, crosses zero) — this is why `v9.2`'s Games/SASRec aggregate result is reported `FAIL_FROZEN_MATCHED_ALPHA_NDCG_GATE` despite the large gain over plain text.
+
+**Joint-trained residual, SASRec, patched-IEM comparator:**
+
+| Arm | NDCG@10 | vs. text |
+| :--- | ---: | ---: |
+| Text-only (baseline) | 0.046366 | — |
+| Mean shuffle | 0.048226 | `+4.01%` |
+| **Real visual** | **0.051066** | **`+10.14%`** |
+
+**G2 exposure-gate protocol, SASRec, novel-target only (14,583 rows), older comparator:**
+
+| Arm | NDCG@10 | vs. text | Recall@10 | vs. text |
+| :--- | ---: | ---: | ---: | ---: |
+| Text-only (baseline) | 0.022756 | — | 0.046652 | — |
+| Constant | 0.022756 | `+0.00%` | 0.046652 | `+0.00%` |
+| Gaussian | 0.022109 | `-2.85%` | 0.046241 | `-0.88%` |
+| Text-PCA | 0.022835 | `+0.35%` | 0.046904 | `+0.54%` |
+| **Real visual (plain, adopted)** | **0.024127** | **`+6.03%`** | **0.050744** | **`+8.77%`** |
+| Gated (low-exposure) | 0.024039 | `+5.64%` | 0.050081 | `+7.35%` |
+| Gated (hybrid) | 0.024282 | `+6.70%` | 0.050310 | `+7.84%` |
+
+The plain, ungated residual is the adopted method: the exposure gate's extra `+0.000154` NDCG@10 over plain real has a 95% CI crossing zero, so the added complexity is not earned.
+
+**BERT4Rec competitive protocol, Games, novel-target only (second backbone, replication check):**
+
+| Arm | NDCG@10 | vs. text |
+| :--- | ---: | ---: |
+| Text-only (baseline, competitive-gate mean, floor `0.0182`) | 0.019528 | — |
+| Gaussian | 0.019171 | `-1.83%` |
+| Text-PCA | 0.019777 | `+1.27%` |
+| Constant | 0.019528 | `+0.00%` |
+| **Real visual** | **0.020935** | **`+7.21%`** |
+
+Same direction confirmed on Recall@10 (`+0.003566`), NDCG@20 (`+0.001556`), and Recall@20 (`+0.004160`), all real-minus-text, all 3/3 seeds, all intervals excluding zero — absolute NDCG@20/Recall@20 baseline values were not recorded in this fork's reports, only the deltas above.
+
+**Cross-backbone stress test, GRU4Rec (near-degenerate baseline, informational only):**
+
+| Model/protocol | Text (baseline) | Real visual | vs. text | Gaussian | Text-PCA |
+| :--- | ---: | ---: | ---: | ---: | ---: |
+| SASRec G2 (for reference) | 0.022756 | 0.024127 | `+6.03%` | 0.022109 | 0.022835 |
+| GRU4Rec | 0.000653 | 0.014008 | `+2043.62%` | 0.000266 | **0.016648** |
+
+GRU4Rec's `+2043.62%` is not evidence of a strong effect — the baseline is near-zero, and text-PCA (`0.016648`) beats real visual outright (`real - text-PCA = -0.002640`, 95% CI `[-0.003554, -0.001719]`, 0/3 seed wins). Kept as a documented negative result, not discarded.
+
+**Out-of-domain transfer, Sports/BERT4Rec (external-validity check — failed):**
+
+| Seed | Text (baseline) | Real visual | Shuffle |
+| :--- | ---: | ---: | ---: |
+| 2024 | 0.006591902 | 0.006520674 | 0.006410032 |
+| 2025 | 0.007659990 | 0.007558745 | 0.007429713 |
+| 2026 | 0.007017651 | 0.007239187 | 0.007000550 |
+
+Real vs. text: `+0.000016` mean delta — fails. Real vs. shuffle: `+0.000159` — passes. Recall@10 also drops past the allowed threshold on 2/3 seeds. This is the transfer failure that keeps `v9.2` labeled Games-conditional rather than general.
+
+**C0.5 matched-shuffle reconstruction (strongest visual-specificity evidence in the program, both backbones, ATE = average treatment effect):**
+
+| Backbone | ATE real | ATE shuffle | Real − shuffle | 95% CI |
+| :--- | ---: | ---: | ---: | :--- |
+| SASRec G2 | 0.001371 | -0.000307 | `+0.001678` | `[0.001258, 0.002196]` |
+| BERT4Rec | 0.001407 | -0.000104 | `+0.001511` | `[0.000860, 0.002138]` |
+
+Verdict: `PASS_VISUAL_SPECIFICITY` on Games only, for these exact frozen checkpoints — this table, not the raw real-vs-text percentages above, is the honest headline result for `v9.2`.
 
 ---
 
