@@ -229,107 +229,24 @@ One caveat, stated rather than smoothed over: this landscape uses the paper's ow
 
 ## Comprehensive Experimental Benchmark
 
-Every closed generation (`v0`, `v9.0`, `v9.1`, `v9.2`) has a recorded result; they are reproduced below **exactly as measured**, grouped by the protocol/comparator/backbone each one actually used — these are not interchangeable, so they are not merged into one misleadingly uniform table (see the caveat above). `v10`/`v11` have no rows here yet, matching their `—` cells in the version table. Every table states its baseline explicitly and reports `vs. baseline` first; blank cells mean that metric was not recorded in this fork's own reports, not that it was zero.
+**Same dataset?** Mostly yes — every row below except one is **Games** (`Video_Games_5core`); one row is the **Sports** transfer test. What is *not* the same across rows is the **checkpoint** (pre-patch vs. patched-IEM — a mid-program bidirectional-attention bug fix), the **evaluation slice** (all test rows vs. novel-target-only, after `v9.1` showed aggregate metrics hide an immediate-repeat confound), and the **backbone** (SASRec/BERT4Rec/GRU4Rec). Those three columns are kept explicit in the table below instead of hidden, because a row that silently mixed checkpoints or slices would misattribute the patch's or the slicing's own effect to the visual intervention. One master table, not one baseline number.
 
-### v0 — Text-only baseline (reference for every later generation)
+| Generation | Dataset | Backbone | Checkpoint | Slice | Baseline NDCG@10 | Method NDCG@10 | Δ NDCG@10 | Baseline Recall@10 | Method Recall@10 | Δ Recall@10 | Verdict |
+| :--- | :--- | :--- | :--- | :--- | ---: | ---: | ---: | ---: | ---: | ---: | :--- |
+| `v0` (reference) | Games | SASRec | pre-patch, ckpt-1000 | all rows | 0.0521 (paper) | 0.0504 | `-3.31%` | 0.0865 (paper) | 0.0821 | `-5.13%` | Reproduction, not an intervention |
+| `v9.0` additive fusion | Games | SASRec | pre-patch (own table) | all rows | 0.04889 | 0.04016 | `-17.86%` | — | — | — | **Rejected** |
+| `v9.2` I1‑A / patched rerun | Games | SASRec | patched-IEM | all rows | 0.04637 | 0.05741 | `+23.82%` | 0.07818 | 0.09060 | `+15.89%` | Fails matched-shuffle gate (shuffle alone: `+22.39%`) |
+| `v9.2` joint-trained | Games | SASRec | patched-IEM | all rows | 0.04637 | 0.05107 | `+10.14%` | — | — | — | Confounded (shuffle alone: `+4.01%`) |
+| `v9.2` G2 exposure-residual | Games | SASRec | pre-patch (own table) | novel-only | 0.02276 | 0.02413 | `+6.03%` | 0.04665 | 0.05074 | `+8.77%` | **Passes** vs. Gaussian/text-PCA/shuffle controls |
+| `v9.2` BERT4Rec replication | Games | BERT4Rec | pre-patch (own table) | novel-only | 0.01953 | 0.02094 | `+7.21%` | +0.00357 (delta only) | — | — | **Passes**, replicates SASRec result |
+| `v9.2` GRU4Rec stress test | Games | GRU4Rec | pre-patch (own table) | novel-only | 0.00065 | 0.01401 | `+2044%` | — | — | — | Discounted — text-PCA control scores higher (0.01665) |
+| `v9.2` Sports transfer | Sports | BERT4Rec | pre-patch (own table) | novel-only, 3-seed mean | 0.00702 | 0.00711 | `+0.000016` abs (`fail`) | — | — | — | **Fails** — no transfer off Games |
+| `v9.2` C0.5 matched-shuffle, SASRec | Games | SASRec | patched-IEM | novel-only, ATE | −0.00031 (shuffle ATE) | 0.00137 (real ATE) | `+0.00168`, CI `[0.00126, 0.00220]` | — | — | — | **`PASS_VISUAL_SPECIFICITY`** |
+| `v9.2` C0.5 matched-shuffle, BERT4Rec | Games | BERT4Rec | patched-IEM | novel-only, ATE | −0.00010 (shuffle ATE) | 0.00141 (real ATE) | `+0.00151`, CI `[0.00086, 0.00214]` | — | — | — | **`PASS_VISUAL_SPECIFICITY`** |
+| `v10` caption augmentation | Games, Arts | SASRec (matched) | — | — | — | — | — | — | — | — | Running, no result |
+| `v11` HaNoRec CF-hardness | Games | Qwen2.5-VL reranker | — | — | — | — | — | — | — | — | Running, no result |
 
-| IEM checkpoint | NDCG@10 | Recall@10 | NDCG@20 | Recall@20 | vs. paper (NDCG@10) |
-| :--- | ---: | ---: | ---: | ---: | ---: |
-| 500 | 0.04975 | 0.08208 | 0.05655 | 0.10907 | `-4.51%` |
-| **1000 (used as `v0` baseline everywhere below)** | **0.05038** | **0.08206** | **0.05719** | **0.10912** | **`-3.31%`** |
-| Paper (official, full compute) | 0.0521 | 0.0865 | 0.0595 | 0.1157 | — |
-
-A second, independently retrained "patched-IEM" checkpoint (fixing a bidirectional-attention bug found mid-program) is used as the comparator for every `v9.2` sub-experiment below instead of the row above — reusing the pre-patch numbers as a baseline for post-patch results would misattribute the patch's own effect to the visual intervention:
-
-| Patched-IEM checkpoint | NDCG@10 | Recall@10 |
-| :--- | ---: | ---: |
-| 500 | 0.04637 | 0.07818 |
-| 1000 | 0.04750 | 0.07944 |
-
-### v9.0 — Additive item-embedding fusion, Games/SASRec (rejected)
-
-| Arm | NDCG@10 (all test rows) | vs. text baseline |
-| :--- | ---: | ---: |
-| T-null (text baseline) | 0.048886 | — |
-| T-mask | 0.048247 | `-1.31%` |
-| L-shuffle (mismatched image) | 0.042679 | `-12.68%` |
-| L-real (correct image) | 0.040156 | `-17.86%` |
-
-Real visual is worse than both text and shuffle on the aggregate metric — the headline reason `v9.0` was rejected. A later re-slice by target type found the opposite sign on novel-only targets (`L-real` `+29.57%` vs. text, `+11.19%` vs. shuffle), which is reported as a methodological finding about immediate-repeat contamination, not a rehabilitation of the additive-fusion design (its training arms and insertion geometry stay confounded either way).
-
-### v9.2 — Frozen score-level residual family, Games (closed, conditional positive)
-
-**I1‑A / patched frozen rerun, SASRec, patched-IEM comparator, aggregate protocol:**
-
-| Arm | NDCG@10 | vs. text | Recall@10 | vs. text |
-| :--- | ---: | ---: | ---: | ---: |
-| Patched text (baseline) | 0.046366 | — | 0.078183 | — |
-| Mean matched shuffle | 0.056748 | `+22.39%` | 0.083397 | `+6.67%` |
-| **Real visual** | **0.057412** | **`+23.82%`** | **0.090605** | **`+15.89%`** |
-
-Real beats matched shuffle by only `+1.17%` NDCG@10 (95% CI `[-0.000628, +0.001962]`, crosses zero) — this is why `v9.2`'s Games/SASRec aggregate result is reported `FAIL_FROZEN_MATCHED_ALPHA_NDCG_GATE` despite the large gain over plain text.
-
-**Joint-trained residual, SASRec, patched-IEM comparator:**
-
-| Arm | NDCG@10 | vs. text |
-| :--- | ---: | ---: |
-| Text-only (baseline) | 0.046366 | — |
-| Mean shuffle | 0.048226 | `+4.01%` |
-| **Real visual** | **0.051066** | **`+10.14%`** |
-
-**G2 exposure-gate protocol, SASRec, novel-target only (14,583 rows), older comparator:**
-
-| Arm | NDCG@10 | vs. text | Recall@10 | vs. text |
-| :--- | ---: | ---: | ---: | ---: |
-| Text-only (baseline) | 0.022756 | — | 0.046652 | — |
-| Constant | 0.022756 | `+0.00%` | 0.046652 | `+0.00%` |
-| Gaussian | 0.022109 | `-2.85%` | 0.046241 | `-0.88%` |
-| Text-PCA | 0.022835 | `+0.35%` | 0.046904 | `+0.54%` |
-| **Real visual (plain, adopted)** | **0.024127** | **`+6.03%`** | **0.050744** | **`+8.77%`** |
-| Gated (low-exposure) | 0.024039 | `+5.64%` | 0.050081 | `+7.35%` |
-| Gated (hybrid) | 0.024282 | `+6.70%` | 0.050310 | `+7.84%` |
-
-The plain, ungated residual is the adopted method: the exposure gate's extra `+0.000154` NDCG@10 over plain real has a 95% CI crossing zero, so the added complexity is not earned.
-
-**BERT4Rec competitive protocol, Games, novel-target only (second backbone, replication check):**
-
-| Arm | NDCG@10 | vs. text |
-| :--- | ---: | ---: |
-| Text-only (baseline, competitive-gate mean, floor `0.0182`) | 0.019528 | — |
-| Gaussian | 0.019171 | `-1.83%` |
-| Text-PCA | 0.019777 | `+1.27%` |
-| Constant | 0.019528 | `+0.00%` |
-| **Real visual** | **0.020935** | **`+7.21%`** |
-
-Same direction confirmed on Recall@10 (`+0.003566`), NDCG@20 (`+0.001556`), and Recall@20 (`+0.004160`), all real-minus-text, all 3/3 seeds, all intervals excluding zero — absolute NDCG@20/Recall@20 baseline values were not recorded in this fork's reports, only the deltas above.
-
-**Cross-backbone stress test, GRU4Rec (near-degenerate baseline, informational only):**
-
-| Model/protocol | Text (baseline) | Real visual | vs. text | Gaussian | Text-PCA |
-| :--- | ---: | ---: | ---: | ---: | ---: |
-| SASRec G2 (for reference) | 0.022756 | 0.024127 | `+6.03%` | 0.022109 | 0.022835 |
-| GRU4Rec | 0.000653 | 0.014008 | `+2043.62%` | 0.000266 | **0.016648** |
-
-GRU4Rec's `+2043.62%` is not evidence of a strong effect — the baseline is near-zero, and text-PCA (`0.016648`) beats real visual outright (`real - text-PCA = -0.002640`, 95% CI `[-0.003554, -0.001719]`, 0/3 seed wins). Kept as a documented negative result, not discarded.
-
-**Out-of-domain transfer, Sports/BERT4Rec (external-validity check — failed):**
-
-| Seed | Text (baseline) | Real visual | Shuffle |
-| :--- | ---: | ---: | ---: |
-| 2024 | 0.006591902 | 0.006520674 | 0.006410032 |
-| 2025 | 0.007659990 | 0.007558745 | 0.007429713 |
-| 2026 | 0.007017651 | 0.007239187 | 0.007000550 |
-
-Real vs. text: `+0.000016` mean delta — fails. Real vs. shuffle: `+0.000159` — passes. Recall@10 also drops past the allowed threshold on 2/3 seeds. This is the transfer failure that keeps `v9.2` labeled Games-conditional rather than general.
-
-**C0.5 matched-shuffle reconstruction (strongest visual-specificity evidence in the program, both backbones, ATE = average treatment effect):**
-
-| Backbone | ATE real | ATE shuffle | Real − shuffle | 95% CI |
-| :--- | ---: | ---: | ---: | :--- |
-| SASRec G2 | 0.001371 | -0.000307 | `+0.001678` | `[0.001258, 0.002196]` |
-| BERT4Rec | 0.001407 | -0.000104 | `+0.001511` | `[0.000860, 0.002138]` |
-
-Verdict: `PASS_VISUAL_SPECIFICITY` on Games only, for these exact frozen checkpoints — this table, not the raw real-vs-text percentages above, is the honest headline result for `v9.2`.
+**Reading the table honestly:** the two `C0.5` rows are the only ones that isolate the visual signal from every other explanation (frozen checkpoint, matched-shuffle control, ATE with a 95% CI excluding zero) and are the closed program's actual headline result: a small, positive, Games-specific visual-specificity effect (`~+0.0015`–`+0.0017` NDCG@10), not the much larger `+23.82%`/`+2044%` deltas above them, which look impressive only because their comparator (plain text, or a near-degenerate GRU4Rec baseline) is a weaker check than a matched shuffle. `v9.0`'s rejection and `v9.2` Sports' transfer failure are the two rows that keep this program from being called a general method.
 
 ---
 
