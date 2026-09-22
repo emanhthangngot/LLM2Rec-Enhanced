@@ -33,8 +33,8 @@ Two structural lessons carry across every generation:
 | **v9.0** | `Additive-Item-Fusion` | CLIP image feature → MLP → summed directly into the item embedding | **Rejected** | Games | SASRec |
 | **v9.1** | `Sequence-Side-Fusion` (S1/S2) | Visual signal folded into the user-sequence hidden state | **Rejected** | Games | SASRec |
 | **v9.2** | `Frozen-Score-Residual` | `score_final = score_text + α·z_visual` at the ranking boundary; text recommender and candidate table stay frozen | **Closed — conditional positive, program exhausted (`STOP2`)** | Games (dev), Sports (transfer) | SASRec, BERT4Rec |
-| **v10** *(active)* | `Caption-Augmentation` | Florence‑2 offline image→text captions injected into CSFT/MNTP/SimCSE input history via 5 controlled arms (`title-only`/`null`/`real`/`shuffle`/`paraphrase`) | **Running — corpus generation resumed, no downstream training yet** | Games (dev), Arts (replication), AmazonMix-6 (pretrain); Baby reserved sealed | SASRec (matched) |
-| **v11** *(active)* | `HaNoRec-CF-Hardness` | Freeze LLM2Rec + SASRec; blend a CF score margin (`w ∈ {1.0, 0.5, 0.0}`) with HaNoRec's semantic hardness to weight a DPO-tuned Qwen2.5‑VL reranker over SASRec's real top‑20 | **Running — SFT + 6 branch kernels mid-verification** | Games only | Qwen2.5-VL reranker over SASRec |
+| **v10** *(active)* | `Caption-Augmentation` | Florence‑2 offline image→text captions injected into CSFT/MNTP/SimCSE input history via 5 controlled arms (`title-only`/`null`/`real`/`shuffle`/`paraphrase`) | **Running — `real` arm complete end-to-end, 4/5 arms remaining** | Games (dev), Arts (replication), AmazonMix-6 (pretrain); Baby reserved sealed | SASRec (matched) |
+| **v11** *(active)* | `HaNoRec-CF-Hardness` | Freeze LLM2Rec + SASRec; blend a CF score margin (`w ∈ {1.0, 0.5, 0.0}`) with HaNoRec's semantic hardness to weight a DPO-tuned Qwen2.5‑VL reranker over SASRec's real top‑20 | **Exploratory pilot complete (non-confirmatory by design); full-scale run pending** | Games only | Qwen2.5-VL reranker over SASRec |
 
 Results and rejection reasons are pulled out into their own tables below (`Results vs. Baseline` and `Why Rejected / Limited`) instead of being packed into this overview.
 
@@ -236,8 +236,9 @@ One caveat, stated rather than smoothed over: this landscape uses the paper's ow
 | `v0` (reference reproduction) | SASRec | pre-patch, ckpt-1000 | all rows | 0.0521 (paper) | 0.0504 | `-3.31%` | 0.0865 (paper) | 0.0821 | `-5.13%` | Reproduction, not an intervention |
 | `v9.2` `C0.5` matched-shuffle | SASRec | patched-IEM | novel-only, ATE | −0.00031 (shuffle ATE) | 0.00137 (real ATE) | `+0.00168`, CI `[0.00126, 0.00220]` | — | — | — | **`PASS_VISUAL_SPECIFICITY`** |
 | `v9.2` `C0.5` matched-shuffle | BERT4Rec | patched-IEM | novel-only, ATE | −0.00010 (shuffle ATE) | 0.00141 (real ATE) | `+0.00151`, CI `[0.00086, 0.00214]` | — | — | — | **`PASS_VISUAL_SPECIFICITY`** |
+| `v10` `real` arm (caption-augmented) | SASRec | pre-patch, ckpt-1000 | all rows | 0.0504 (`v0`) | 0.04866 | `-3.41%` | 0.0821 (`v0`) | 0.08253 | `+0.57%` | **Preliminary** — 1 of 5 arms; not yet compared to `title-only`/`null`/`shuffle`/`paraphrase` controls |
 
-`v10`/`v11` have no rows here yet — both are still running and have not cleared the same matched-control gate `C0.5` used, so no metric is reported for either (see `AGENTS.md`'s no-fabrication rule).
+`v10`'s row above is a single completed arm, not a finding: the delta is within the seed-to-seed noise band already documented for this pipeline (std ≈ `0.0016`–`0.0032` NDCG@10 across the 3 experiments in this same run) and has no matched control yet. `v11` has no row here — its completed exploratory pilot produced metrics too statistically thin to call a result; see `Why Rejected / Limited` below.
 
 ## Why Rejected / Limited
 
@@ -249,8 +250,9 @@ Rejection and limitation reasons for every generation that did **not** end up in
 | `v9.1` sequence-side fusion (S1/S2) | **Rejected** | `92%` of the apparent gain traced to `740` immediate-repeat rows; a recency-only reranker with **zero image input** beats it on the same slice on all 3 seeds — the fused state learned to copy the last interacted item, not visual semantics |
 | `v9.2` frozen score-residual — Sports transfer | Limitation | CSFT/IEM were never tuned on the Sports domain; the frozen visual profile and score-boundary calibration learned on Games don't carry over — real visual barely edges out a matched shuffle (`+0.000016` mean NDCG@10) and loses to plain text |
 | `v9.2` frozen score-residual — GRU4Rec backbone | Limitation | GRU4Rec's own text-only baseline is near-degenerate (`~0.0007` NDCG@10), so a large relative visual gain there fills near-empty signal rather than proving visual content matters; a text-PCA control (`0.01665`) beats real visual outright on this backbone |
+| `v11` HaNoRec exploratory pilot (1-seed, 25 eval users) | Inconclusive (pre-registered non-confirmatory) | All 6 branches (`w ∈ {1.0, 0.5, 0.0}` × real/shuffle) completed SFT+DPO (177/177 optimizer updates each) but scored `NDCG@10 ≈ 0`/`Recall@10 ≈ 0` on 5 of 6 branches; `candidate_recall@20` — the reranking ceiling — is only `0.04` on every branch, meaning the frozen SASRec top-20 rarely contains the true target at all in this 25-user sample. Near-zero reranking metrics reflect retrieval-stage coverage at this reduced scale, not HaNoRec's method quality; the full-scale run (530 pairs / 265 eval users) is required before any real-vs-shuffle comparison is meaningful |
 
-Together, these two rows are why `v9.2` is reported as **Games-conditional**, not a general method, despite passing `C0.5` on that one dataset.
+The `v9.2` Sports-transfer and GRU4Rec rows are why it is reported as **Games-conditional**, not a general method, despite passing `C0.5` on that one dataset. The `v11` row is a different kind of caveat: not a negative result, a **statistically uninformative** one — no conclusion is drawn from it either way.
 
 ---
 
