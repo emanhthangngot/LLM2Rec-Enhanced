@@ -1,0 +1,18 @@
+{
+  "id": "trixuanle/llm2rec-caption-tiny-real-csft",
+  "title": "llm2rec-caption-tiny-real-csft",
+  "code_file": "tiny_chain_csft.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_internet": true,
+  "dataset_sources": [
+    "trixuanle/llm2rec-caption-corpus-v10-compact",
+    "trixuanle/llm2rec-games-5core"
+  ],
+  "kernel_sources": [],
+  "machine_shape": "NvidiaTeslaT4",
+  "competition_sources": [],
+  "output_file": "tiny-csft-artifact.json"
+}

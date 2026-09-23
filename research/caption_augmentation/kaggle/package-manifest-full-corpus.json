@@ -1,0 +1,16 @@
+{
+  "bundle_sha256": "be95ab2ee1e9fb1d56fc80ab43f22ef21d75fec21644fe60b1c8530620b3b786",
+  "members": {
+    "visual_delta_fusion/__init__.py": "42f640b9186d888a9f347398b8d38471f324bcd8dddc0a261571473027b835e2",
+    "visual_delta_fusion/caption.py": "01e2caa077bb3148b80b23c25482793aed7434e25e859d98a136cb52cd335961",
+    "visual_delta_fusion/corpus.py": "95403710de7b8f3e7c88d7ab0bc4ef224b6fe3a0f980f13062190727c6ff9402",
+    "visual_delta_fusion/crosswalk.py": "c3f569c764ffafc26b64ac058e0d48f874f67353832a9bdeb42b09450ae7ce53",
+    "visual_delta_fusion/experiment.json": "7baaeb77094b07bcb1a6f2f9a888f8c1afcb4aca098cb890a40bbc89a5af15f0",
+    "visual_delta_fusion/pipeline.py": "336c57c01bb12f0bca4ccdd1f0de46ed1bbe40b55be1142d40a08e4a06ab6093",
+    "visual_delta_fusion/smoke.py": "99e2f347c74a8252401a4d8773aadb9982603dc4e2d8222ba9cf6cba8f1658c4"
+  },
+  "metadata_sha256": "ba91d2b18523758fc950b4f8c989f3043d242be398ff58becb3b2789613d3a7e",
+  "notebook": true,
+  "runner_sha256": "70ca3f94917a3e5cfacd555abf47a3b517ef274d057523e4b23a9f9f0fca2149",
+  "stage": "full_corpus_generation"
+}

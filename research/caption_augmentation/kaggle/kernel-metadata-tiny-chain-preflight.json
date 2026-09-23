@@ -1,0 +1,19 @@
+{
+  "code_file": "tiny_chain_preflight.py",
+  "competition_sources": [],
+  "dataset_sources": [
+    "trixuanle/llm2rec-caption-corpus-v10-compact"
+  ],
+  "enable_gpu": false,
+  "enable_internet": false,
+  "enable_tpu": false,
+  "id": "trixuanle/llm2rec-caption-tiny-chain-input-preflight",
+  "is_private": true,
+  "kernel_sources": [],
+  "kernel_type": "script",
+  "keywords": [],
+  "language": "python",
+  "machine_shape": "None",
+  "model_sources": [],
+  "title": "LLM2Rec Caption Tiny Chain Input Preflight"
+}

@@ -1,0 +1,17 @@
+{
+  "schema": "llm2rec-caption-tiny-csft-1",
+  "corpus_dataset": "trixuanle/llm2rec-caption-corpus-v10-compact",
+  "corpus_source_manifest_sha256": "521849b297ae9dfce3626f60db48c0facbeaa757bfc343bff2285d3d89af84d7",
+  "development_dataset": "trixuanle/llm2rec-games-5core",
+  "domain": "Video_Games",
+  "global_id_offset": 66082,
+  "arms": ["title-only", "real"],
+  "rows_per_arm": 4,
+  "optimizer_steps": 1,
+  "max_length": 128,
+  "model_id": "Qwen/Qwen2-0.5B",
+  "model_revision": "91d2aff3f957f99e4c74c962f2f408dcc88a18d8",
+  "tokenizer_revision": "91d2aff3f957f99e4c74c962f2f408dcc88a18d8",
+  "target_contract": "original next-item title; arm text only in history",
+  "training_scope": "technical smoke, not recommendation efficacy"
+}

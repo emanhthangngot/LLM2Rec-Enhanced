@@ -1,0 +1,144 @@
+{
+  "pipeline": "llm2rec-budgeted-games-evaluation",
+  "contract_version": "2026-08-20.1",
+  "source_commit": "73b481f710f67166ab958f4985d27b27fb410871",
+  "dataset_source": {
+    "slug": "llm2rec-games-5core",
+    "root": "/kaggle/input/datasets/trixuanle/llm2rec-games-5core/Video_Games/5-core",
+    "files": {
+      "train_data.txt": {
+        "bytes": 3435528,
+        "sha256": "1300e5deec29d4bede6e32bfa1a5eade563f53a6916da95d67754ec40b9475b8"
+      },
+      "val_data.txt": {
+        "bytes": 468696,
+        "sha256": "484a97cfbcff2a78e92612b15863ce08c84c285c7bfb325ec1f33d3884e6de16"
+      },
+      "test_data.txt": {
+        "bytes": 483884,
+        "sha256": "80074ffea37928d92c35038e9d8bbf3de0cfcf01308ae4173e3c680c1bc50d1f"
+      },
+      "item_titles.json": {
+        "bytes": 528430,
+        "sha256": "17f501809c4159905cfa6dfa5626d3d52d0be32bc9747ee89b003662f6f5e84c"
+      }
+    }
+  },
+  "checkpoint_source": {
+    "kernel": "trixuanle/llm2rec-caption-full-iem",
+    "paths": {
+      "500": "/kaggle/input/notebooks/trixuanle/llm2rec-caption-full-iem/iem-stage2/checkpoint-500",
+      "1000": "/kaggle/input/notebooks/trixuanle/llm2rec-caption-full-iem/iem-stage2/checkpoint-1000"
+    }
+  },
+  "checkpoints": {
+    "500": "/kaggle/input/notebooks/trixuanle/llm2rec-caption-full-iem/iem-stage2/checkpoint-500",
+    "1000": "/kaggle/input/notebooks/trixuanle/llm2rec-caption-full-iem/iem-stage2/checkpoint-1000"
+  },
+  "embeddings": {
+    "500": "/kaggle/working/LLM2Rec/item_info/Games_5core/Qwen2-0.5B-LLM2Rec-IEM-budgeted_step500_title_item_embs.npy",
+    "1000": "/kaggle/working/LLM2Rec/item_info/Games_5core/Qwen2-0.5B-LLM2Rec-IEM-budgeted_step1000_title_item_embs.npy"
+  },
+  "embedding_validations": {
+    "500": {
+      "path": "/kaggle/working/LLM2Rec/item_info/Games_5core/Qwen2-0.5B-LLM2Rec-IEM-budgeted_step500_title_item_embs.npy",
+      "sha256": "1582a0158010a69bf8ef63e84d7ec7fc532af19b80096f6348a796f34054a7da",
+      "shape": [
+        9518,
+        896
+      ],
+      "dtype": "float32",
+      "catalog_items": 9517,
+      "padding_row": 0,
+      "nan_count": 0,
+      "inf_count": 0,
+      "all_zero_row_count": 0,
+      "norm_min": 58.99079513549805,
+      "norm_mean": 100.2040786743164,
+      "norm_max": 155.44375610351562
+    },
+    "1000": {
+      "path": "/kaggle/working/LLM2Rec/item_info/Games_5core/Qwen2-0.5B-LLM2Rec-IEM-budgeted_step1000_title_item_embs.npy",
+      "sha256": "445773b551bb8bbb6c0ae03fb5db1a3030a2d1d910fadd3bde089156ae60cbe8",
+      "shape": [
+        9518,
+        896
+      ],
+      "dtype": "float32",
+      "catalog_items": 9517,
+      "padding_row": 0,
+      "nan_count": 0,
+      "inf_count": 0,
+      "all_zero_row_count": 0,
+      "norm_min": 85.86865997314453,
+      "norm_mean": 131.46067810058594,
+      "norm_max": 208.1005401611328
+    }
+  },
+  "sasrec_result_files": {
+    "500": [
+      "/kaggle/working/LLM2Rec/Results/Games_5core/SASRec/lr_0.001_dr_0.3_time_Sep-22-2026_10-29-28_emb_/kaggle/working/LLM2Rec/item_info/Games_5core/Qwen2-0.5B-LLM2Rec-IEM-budgeted_step500_title_item_embs.npy/results.txt"
+    ],
+    "1000": [
+      "/kaggle/working/LLM2Rec/Results/Games_5core/SASRec/lr_0.001_dr_0.3_time_Sep-22-2026_10-47-16_emb_/kaggle/working/LLM2Rec/item_info/Games_5core/Qwen2-0.5B-LLM2Rec-IEM-budgeted_step1000_title_item_embs.npy/results.txt"
+    ]
+  },
+  "seeds": [
+    2024,
+    2025,
+    2026
+  ],
+  "full_catalog_scoring": true,
+  "evaluation_protocol": {
+    "candidate_scope": "all item IDs 1..item_num",
+    "history_item_masking": false,
+    "tie_breaking": "torch.topk implementation; no explicit tie-break rule in release",
+    "metrics": [
+      "Recall@10",
+      "NDCG@10",
+      "Recall@20",
+      "NDCG@20"
+    ]
+  },
+  "domain_relation": "in-domain: Games train interactions are included in AmazonMix-6; Games validation and test interactions remain downstream-only",
+  "runtime_deviations": {
+    "dtype": "float16",
+    "attention": "sdpa",
+    "hf_token": "not_required_for_public_Qwen2-0.5B"
+  },
+  "dependencies": {
+    "llm2vec": "0.2.3",
+    "transformers": "4.44.2"
+  },
+  "qwen2_bidirectional_mask_patch": {
+    "path": "/usr/local/lib/python3.12/dist-packages/llm2vec/models/bidirectional_qwen2.py",
+    "original_sha256": "ef0985fe8d386d5d8ebafb98968ed6381a4a69ed43d6a75af7b1f823d08e67b7",
+    "patched_sha256": "b3dfa1df58ea1eee8121d700f5f37ce42268a53828609c2db9456b5d84c89e47"
+  },
+  "bidirectional_preflights": {
+    "500": {
+      "model_class": "Qwen2BiModel",
+      "attention_implementation": "sdpa",
+      "attention_classes": [
+        "ModifiedQwen2SdpaAttention"
+      ],
+      "attention_is_causal": [
+        false
+      ],
+      "future_token_changes_prefix_hidden_state_max_abs": 7.13671875,
+      "passed": true
+    },
+    "1000": {
+      "model_class": "Qwen2BiModel",
+      "attention_implementation": "sdpa",
+      "attention_classes": [
+        "ModifiedQwen2SdpaAttention"
+      ],
+      "attention_is_causal": [
+        false
+      ],
+      "future_token_changes_prefix_hidden_state_max_abs": 12.390625,
+      "passed": true
+    }
+  }
+}

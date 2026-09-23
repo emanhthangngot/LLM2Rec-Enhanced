@@ -1,0 +1,19 @@
+{
+  "id": "trixuanle/llm2rec-caption-full-evaluation",
+  "title": "llm2rec-caption-full-evaluation",
+  "code_file": "evaluate_caption.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_tpu": false,
+  "enable_internet": true,
+  "dataset_sources": [
+    "trixuanle/llm2rec-games-5core"
+  ],
+  "kernel_sources": [
+    "trixuanle/llm2rec-caption-full-iem"
+  ],
+  "machine_shape": "NvidiaTeslaT4",
+  "output_file": "games_evaluation_artifact.json"
+}

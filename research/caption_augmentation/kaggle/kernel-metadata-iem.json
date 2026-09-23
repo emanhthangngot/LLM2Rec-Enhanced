@@ -1,0 +1,19 @@
+{
+  "id": "trixuanle/llm2rec-caption-full-iem",
+  "title": "llm2rec-caption-full-iem",
+  "code_file": "iem_caption.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_tpu": false,
+  "enable_internet": true,
+  "dataset_sources": [
+    "trixuanle/llm2rec-amazonmix6-5core"
+  ],
+  "kernel_sources": [
+    "trixuanle/llm2rec-caption-full-csft"
+  ],
+  "machine_shape": "NvidiaTeslaT4",
+  "output_file": "iem_pipeline_artifact.json"
+}

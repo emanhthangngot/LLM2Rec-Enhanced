@@ -1,0 +1,35 @@
+{
+  "augmentation": {
+    "train": {
+      "augmented_history_items": 4029849,
+      "missing_history_items": 137976,
+      "rows": 960757
+    },
+    "valid": {
+      "augmented_history_items": 650040,
+      "missing_history_items": 19641,
+      "rows": 120095
+    }
+  },
+  "caption_source_manifest_sha256": "521849b297ae9dfce3626f60db48c0facbeaa757bfc343bff2285d3d89af84d7",
+  "checkpoints": [
+    "/kaggle/working/csft-output/checkpoint-1000",
+    "/kaggle/working/csft-output/checkpoint-900"
+  ],
+  "cuda_device": "Tesla T4",
+  "effective_batch_size": 128,
+  "elapsed_seconds": 19663.75418711,
+  "gradient_accumulation_steps": 128,
+  "max_steps": 1000,
+  "micro_batch_size": 1,
+  "peak_vram_gib": 13.070703029632568,
+  "pipeline": "llm2rec-caption-csft",
+  "resume_checkpoint": null,
+  "source_commit": "73b481f710f67166ab958f4985d27b27fb410871",
+  "source_hashes": {
+    "dataset.py": "8cc542d80816faf66aae6ac80b45fc38c00fa1435b604488c96d73a2845fc714",
+    "run_csft.py": "4ceb531f24c01ba7c18a00376f75fe3700a0834ec7bd78d918b0b70219b8020e"
+  },
+  "status": "PASS",
+  "training_executed": true
+}

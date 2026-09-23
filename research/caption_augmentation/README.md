@@ -22,17 +22,43 @@ title-only rewriting.
 - `test_corpus.py` — stdlib-only `unittest` regression suite. Run:
 
   ```bash
-  python -m py_compile code/llm2rec/visual_delta_fusion/*.py
-  python -m unittest discover -s code/llm2rec/visual_delta_fusion -p "test_*.py"
+  cd research
+  python -m py_compile caption_augmentation/*.py caption_augmentation/kaggle/*.py
+  python -m unittest discover -s caption_augmentation -p "test_*.py"
   ```
+
+## Executed Kaggle kernels (`kaggle/`)
+
+These are the exact kernels that produced the v10 corpus and the v8/v9 `real`
+arm results. Each `kernel-metadata-*.json` points `code_file` at its script.
+
+| Stage | Script | Kaggle kernel | Output |
+|---|---|---|---|
+| Caption corpus (Florence-2 + Qwen2.5-3B paraphrase), resumable over 10 pushes | `full_corpus_generation.ipynb` | `trixuanle/llm2rec-caption-full-corpus-v2-inline` | 108,753 records, 213 shards |
+| Tiny-chain input preflight (no training) | `tiny_chain_preflight.py` | see metadata | `tiny-chain-input-preflight.json` |
+| Tiny-chain CSFT smoke (execution proof only) | `tiny_chain_csft.py` + `run-protocol-tiny-chain-csft.json` | see metadata | no recommendation metrics |
+| CSFT, `real` arm, 1,000 steps | `csft_caption.py` | `trixuanle/llm2rec-caption-full-csft` | `caption_csft_artifact.json` |
+| IEM (MNTP + SimCSE, patched bidirectional Qwen2) | `iem_caption.py` | `trixuanle/llm2rec-caption-full-iem` | checkpoints 500/1000 |
+| Embedding extraction + SASRec (3 SASRec seeds) | `evaluate_caption.py` | `trixuanle/llm2rec-caption-full-evaluation` | `games_evaluation_artifact.json`, `results.txt` |
+
+`results/v8/` and `results/v9/` hold the downloaded artifacts of the two
+`real`-arm runs. v9 includes the history-token-budget fix, which changed
+1 history item. Both runs use a single seed-42 chain, so they are not a
+multi-chain estimate. See `docs/reports/v10-caption-augmentation-teacher-brief.md`
+for the result tables and `docs/reports/v10-caption-corpus-audit.md` for
+the corpus audit.
+
+The Python package directory was renamed `caption_augmentation` in this
+repository. The Kaggle packaging code (`package.py`) and the committed
+notebook still use the import name `visual_delta_fusion`, which is the name
+they were executed under.
 
 ## Naming
 
-The directory is `visual_delta_fusion` (underscore, importable), matching the
-sibling `code/llm2rec/baseline/` and `code/llm2rec/multimodal/` convention.
-This name predates the current plan's "no lexical delta filter" decision and
-is kept for import/path stability, not because the current arms compute a
-lexical "delta" — they do not.
+In the original workspace the directory was `visual_delta_fusion`
+(underscore, importable), matching its sibling `baseline/` and `multimodal/` packages.
+That name predates the plan's "no lexical delta filter" decision. The
+current arms do not compute a lexical "delta".
 
 ## Kaggle-only boundary
 
