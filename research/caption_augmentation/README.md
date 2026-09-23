@@ -44,9 +44,21 @@ arm results. Each `kernel-metadata-*.json` points `code_file` at its script.
 `results/v8/` and `results/v9/` hold the downloaded artifacts of the two
 `real`-arm runs. v9 includes the history-token-budget fix, which changed
 1 history item. Both runs use a single seed-42 chain, so they are not a
-multi-chain estimate. See `docs/reports/v10-caption-augmentation.md`
-for the result tables and `docs/reports/v10-caption-augmentation-design.md` for
-the design and corpus audit.
+multi-chain estimate. Each `iem/` subfolder holds the MNTP/SimCSE configs and
+`trainer_state.json` loss/grad-norm histories for that run, retrieved per
+version with `ListKernelSessionOutput.version_label = "v1"`/`"v2"`. The
+CLI form `owner/slug/N` silently returns the latest version.
+
+`results/caption_manual_check/sample100_labels.json` holds the fixed 100-item
+sample (seed 20260924) with Florence-2 captions and manual labels.
+`colab/qwen3vl_caption_pilot.ipynb` re-captions the same 100 items with
+Qwen3-VL. The items are embedded in the notebook and the images are downloaded
+at run time. It runs three conditions: `structured`, `generic` and
+`title_only`.
+
+See `docs/reports/v10-caption-augmentation.md` for the result tables and
+`docs/reports/v10-caption-augmentation-design.md` for the design, corpus
+audit, manual check and captioner plan.
 
 The Python package directory was renamed `caption_augmentation` in this
 repository. The Kaggle packaging code (`package.py`) and the committed

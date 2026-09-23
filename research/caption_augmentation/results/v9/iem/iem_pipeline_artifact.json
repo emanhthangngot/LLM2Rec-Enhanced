@@ -1,0 +1,45 @@
+{
+  "pipeline": "llm2rec-budgeted-iem",
+  "source_commit": "73b481f710f67166ab958f4985d27b27fb410871",
+  "csft_checkpoint": "/kaggle/input/notebooks/trixuanle/llm2rec-caption-full-csft/csft-output/checkpoint-1000",
+  "mntp_checkpoint": "/kaggle/working/iem-stage1/checkpoint-1000",
+  "simcse_checkpoints": [
+    "/kaggle/working/iem-stage2/checkpoint-500",
+    "/kaggle/working/iem-stage2/checkpoint-1000"
+  ],
+  "runtime_dtype": "float16_autocast",
+  "parameter_dtype": "float32",
+  "runtime_attention": "sdpa",
+  "qwen2_bidirectional_mask_patch": {
+    "path": "/usr/local/lib/python3.12/dist-packages/llm2vec/models/bidirectional_qwen2.py",
+    "original_sha256": "ef0985fe8d386d5d8ebafb98968ed6381a4a69ed43d6a75af7b1f823d08e67b7",
+    "patched_sha256": "b3dfa1df58ea1eee8121d700f5f37ce42268a53828609c2db9456b5d84c89e47"
+  },
+  "bidirectional_preflight": {
+    "model_class": "Qwen2BiModel",
+    "attention_implementation": "sdpa",
+    "attention_classes": [
+      "ModifiedQwen2SdpaAttention"
+    ],
+    "attention_is_causal": [
+      false
+    ],
+    "future_token_changes_prefix_hidden_state_max_abs": 17.625,
+    "passed": true
+  },
+  "mntp_effective_batch": 32,
+  "simcse_batch": 32,
+  "simcse_official_batch": 256,
+  "simcse_batch_deviation": "32 in-batch negatives on one T4; gradient accumulation intentionally not used because it does not increase in-batch negatives.",
+  "tokenizer_override": "CSFT checkpoint tokenizer replaced with the validated base Qwen2 tokenizer because the checkpoint tokenizer.json failed the fast-tokenizer ModelWrapper parser.",
+  "tokenizer_source": "/kaggle/input/notebooks/trixuanle/llm2rec-caption-full-csft/qwen2-0.5b",
+  "storage_profile": {
+    "mntp_save_steps": 500,
+    "simcse_save_steps": [
+      500,
+      1000
+    ],
+    "save_only_model": true,
+    "stage1_cleanup_before_simcse": true
+  }
+}

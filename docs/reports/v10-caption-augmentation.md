@@ -62,6 +62,7 @@ flowchart TB
 - Chạy trên 1 GPU T4 (16 GB), nên dùng profile "compatibility": fp16 thay bf16, SDPA thay FlashAttention‑2, CSFT 1,000 step thay vì 10,000 step của paper. Đây **không phải** reproduction đầy đủ cấu hình paper.
 - CSFT một chain mất 19,853 giây (≈5.5 giờ GPU), VRAM đỉnh 13.07 GB.
 - Mô hình Qwen2 trong IEM được patch để attention thật sự hai chiều; bước preflight kiểm tra token tương lai làm thay đổi hidden state (đạt ở cả checkpoint 500 và 1,000).
+- **Caption chỉ vào lịch sử CSFT.** MNTP/SimCSE train trên `item_titles.txt` và bước trích embedding dùng `item_titles.json` (title thuần). Lần chạy v8/v9 thực chất là profile `csft-only`, không phải `real` đầy đủ như sơ đồ gợi ý. Chi tiết: mục 4 của `v10-caption-augmentation-design.md`.
 
 ---
 
@@ -127,8 +128,16 @@ Mỗi ô ghi `Δ tuyệt đối (Δ %)`, với Δ = `v10 real − baseline` cùn
 1. **Chưa có kết luận về hiệu quả của caption.** Hiện chỉ có arm `real`. Các arm `title-only`, `null`, `shuffle`, `paraphrase` chưa chạy, nên chưa tách được "ảnh đúng item" khỏi "thêm chữ".
 2. **Chọn baseline nào.** v0 (0.0504) được huấn luyện **trước** khi patch bidirectional, còn v10 dùng IEM đã patch. Vì vậy baseline gần nhất là text-only đã patch (0.0464 / 0.0475). Baseline matched đúng nghĩa là arm `title-only` đi qua cùng runner v10, và arm này chưa có.
 3. **So với paper:** chưa dòng v10 nào đạt mức LLM2Rec paper (NDCG@10 0.0521, Recall@10 0.0865). Tuy vậy mọi dòng v10 trừ v9 ckpt‑1000 vẫn cao hơn LLMEmb (0.0487 / 0.0813). Lưu ý các dòng của nhóm chạy với 1/10 số step CSFT trên T4.
-4. **Biến động giữa hai lần chạy là vấn đề chính.** v8 và v9 gần như cùng dữ liệu (lệch 1 item) nhưng NDCG@10 ở ckpt‑1000 chênh 0.00711. Kiểm tra code cho thấy mọi stage (CSFT qua `Trainer`, MNTP, SimCSE) **đều đã cố định seed 42**. Nguồn biến động còn lại gần như chắc chắn là tính toán GPU không tất định (fp16, SDPA backward), khuếch đại qua 1,000 step chưa hội tụ. Đây là suy luận, chưa đo trực tiếp. Lỗi thật về seed nằm ở chỗ khác: cả thí nghiệm chỉ có **một chain seed**, trong khi protocol yêu cầu 3 chain end-to-end (2024/2025/2026). Ba "seed" hiện có chỉ là seed của SASRec.
+4. **v8 và v9 lệch nhau do SimCSE, không do CSFT hay seed.** Mọi stage đều đã cố định seed 42 (CSFT qua `Trainer`, MNTP, SimCSE). Log từng phiên bản Kaggle cho thấy:
+   - CSFT: eval loss cuối 2.252 so với 2.251;
+   - MNTP: eval loss cuối 2.7025 so với 2.6986;
+   - SimCSE: v8 ổn định suốt quá trình. v9 mất ổn định ở bước 910–1000: loss 0.9691 ở bước 940 (mức nền ≈0.0023), grad norm 12.45 ở bước 990.
+
+   Checkpoint 1000 của v9 được lưu ngay trong cú vọt này. Embedding của nó có norm trung bình 131.5, so với 103.8 ở v8, và NDCG@10 chỉ còn 0.04155. Ở checkpoint 500, cả hai lần chạy đều ổn định, và mức chênh 0.0018 nằm trong dao động giữa các seed SASRec. Lịch learning rate SimCSE (5 epoch, dừng ở bước 1000 theo cấu hình upstream) giữ lr ≈1.92e-4 tới bước 1000, nên checkpoint 1000 dễ rơi đúng vào lúc mất ổn định. Log nằm ở `research/caption_augmentation/results/{v8,v9}/iem/`.
+
+   Lỗi seed thật nằm ở chỗ khác: cả thí nghiệm chỉ có **một chain**, trong khi protocol yêu cầu 3 chain end-to-end (2024/2025/2026). Ba "seed" hiện có chỉ là seed của SASRec.
 5. **Chọn checkpoint.** Protocol quy định chọn ckpt‑500 hay ckpt‑1000 theo validation. Kết quả hiện chỉ lưu test, nên cả hai checkpoint được báo cáo song song, không chọn cái đẹp hơn.
+6. **Bản thân caption mang ít thông tin.** Kiểm tra tay 100 item: 69 caption chỉ lặp title (43 đọc lại chữ trên bìa/hộp, 26 gọi lại loại sản phẩm), chỉ 14 thêm thông tin, chủ yếu là màu. Ngoài ra, chuỗi `<pad>` lọt vào 61.3% text arm `real`, và 59.1% paraphrase trùng title. Chi tiết: mục 4 của `v10-caption-augmentation-design.md`.
 
 ---
 
@@ -136,10 +145,11 @@ Mỗi ô ghi `Δ tuyệt đối (Δ %)`, với Δ = `v10 real − baseline` cùn
 
 | Việc | Lý do | Chi phí ước tính |
 |---|---|---|
-| Truyền `chain_seed` 2024/2025/2026 vào CSFT, MNTP, SimCSE; ghi vào manifest | Đo được biến động giữa các chain đúng protocol | Không tốn GPU |
-| Lưu metric validation, chọn checkpoint bằng validation | Tránh chọn checkpoint bằng tập test | Không tốn GPU |
-| Chạy arm `title-only` qua cùng runner | Tạo comparator matched đầu tiên | ≈6.3 giờ GPU/chain + IEM (chưa đo) |
-| Chạy 3 chain cho `real` và `title-only`, bootstrap cặp theo seed rồi theo user | Đây mới là gate khoa học đã đăng ký | ≈40 giờ GPU trở lên cho Games |
+| Sửa 3 lỗi cài đặt: làm sạch `<pad>`, sửa/bỏ arm `paraphrase`, chốt profile (`csft-only` hay `real` đầy đủ) | Không sửa thì mọi lần chạy tiếp đều lệch | Không tốn GPU |
+| Chạy pilot Qwen3-VL trên 100 item (`research/caption_augmentation/colab/qwen3vl_caption_pilot.ipynb`) | Xem VLM mạnh hơn có thêm được thông tin thị giác không. Ngưỡng: ADDS ≥ 40, lặp title ≤ 20, sai ≤ 10 | Vài chục phút GPU Colab |
+| Truyền `chain_seed` 2024/2025/2026 vào CSFT, MNTP, SimCSE; lưu metric validation và rank từng user | Đo biến động giữa các chain; chọn checkpoint bằng validation | Không tốn GPU |
+| Tầng 1: `real` và `title-only`, seed 2024 | Ngưỡng tiếp tục: +0.002 NDCG@10 và CI theo user > 0 | ≈7.2 giờ GPU T4 mỗi chain (CSFT 5.5 + IEM 0.9 + eval 0.73) |
+| Tầng 2: `real`, `title-only`, `shuffle`, `paraphrase`, đủ 3 seed | Gate khoa học đã đăng ký | ≈65 giờ GPU T4 thêm |
 
 **Tiêu chí thành công đã đăng ký:** arm `real` hơn từng arm đối chứng ở NDCG@10, có khoảng tin cậy 95% nằm trên 0 và thắng ở cả 3/3 chain; Recall@10 không giảm quá ngưỡng đã định. Nếu không đạt, kết quả được báo cáo là âm tính hoặc chưa kết luận, không điều chỉnh sau khi xem test.
 

@@ -33,7 +33,7 @@ Two structural lessons carry across every generation:
 | **v9.0** | `Additive-Item-Fusion` | CLIP image feature → MLP → summed directly into the item embedding | **Rejected** | Games | SASRec |
 | **v9.1** | `Sequence-Side-Fusion` (S1/S2) | Visual signal folded into the user-sequence hidden state | **Rejected** | Games | SASRec |
 | **v9.2** | `Frozen-Score-Residual` | `score_final = score_text + α·z_visual` at the ranking boundary; text recommender and candidate table stay frozen | **Closed — conditional positive, program exhausted (`STOP2`)** | Games (dev), Sports (transfer) | SASRec, BERT4Rec |
-| **v10** *(active)* | `Caption-Augmentation` | Florence‑2 offline image→text captions injected into CSFT/MNTP/SimCSE input history via 5 controlled arms (`title-only`/`null`/`real`/`shuffle`/`paraphrase`) | **Running — corpus complete (108,753 items, 108,226 captioned); `real` arm trained twice on one seed-42 chain (v8, v9) with a large run-to-run swing; 4/5 arms and 3-chain seeding remaining** | Games (dev), Arts (replication), AmazonMix-6 (pretrain); Baby reserved sealed | SASRec (matched) |
+| **v10** *(active)* | `Caption-Augmentation` | Florence‑2 offline image→text captions added to item text via 5 controlled arms (`title-only`/`null`/`real`/`shuffle`/`paraphrase`) | **Paused for fixes — corpus complete (108,753 items, 108,226 captioned); `real` arm ran twice on one seed-42 chain (v8, v9) and only in the CSFT history (`csft-only` in practice); manual check shows captions mostly restate the title; Qwen3-VL caption pilot prepared** | Games (dev), Arts (replication), AmazonMix-6 (pretrain); Baby reserved sealed | SASRec (matched) |
 | **v11** *(active)* | `HaNoRec-CF-Hardness` | Freeze LLM2Rec + SASRec; blend a CF score margin with HaNoRec's semantic hardness (`λ = λ_sem^w · λ_cf^(1−w)`, `w ∈ {1.0, 0.5, 0.0}`) to weight a DPO-tuned Qwen2.5‑VL reranker over SASRec's real top‑20 | **Blocked — first-implementation 265-user run withdrawn (leakage, unmatched shuffle); corrected implementation's exploratory 1-seed run shows no signal above SASRec order; frozen 3-seed matrix does not fit the GPU budget (`BLOCKED_NO_FIT`)** | Games only | Qwen2.5-VL reranker over SASRec |
 
 Results and rejection reasons are pulled out into their own tables below (`Results vs. Baseline` and `Why Rejected / Limited`) instead of being packed into this overview.
@@ -244,7 +244,16 @@ One caveat, stated rather than smoothed over: this landscape uses the paper's ow
 
 **`v10` status, stated plainly:** an earlier version of this README claimed a "common-history-token-budget" bug (captions inflating token count, causing tail truncation to silently drop more history items in the `real` arm than a title-only run) explained why `real ≈ v0`. That bug was real and is fixed in `research/caption_augmentation/kaggle/csft_caption.py`, but the fix's own instrumentation shows it changed **exactly 1 history item out of ~4.03 million** in the training corpus (`history_items_dropped_for_budget: 1` in `research/caption_augmentation/results/v9/caption_csft_artifact.json`). Yet the v8→v9 retrain moved ckpt-1000 NDCG@10 from `0.04866` to `0.04155`.
 
-A second explanation published here, that the training script was *unseeded*, was also wrong and is retracted. The CSFT compatibility patch does remove upstream's `hf_train_dataset.shuffle(seed=seed)`, but `transformers==4.44.2` `Trainer.__init__` itself calls `set_seed(args.seed)` (default `42`), which seeds the `RandomSampler` order and dropout RNG. MNTP calls `set_seed` and `shuffle(seed=42)`, and SimCSE runs with `"seed": 42`. **Every stage of both v8 and v9 therefore already ran with seed 42.** The remaining variance source is non-deterministic GPU arithmetic (fp16, SDPA backward, atomic reductions) amplified over 1,000 under-converged CSFT steps (inference; not directly measured). The real seed defect is different: the pipeline trains only **one chain**, whereas `experiment.json` requires three end-to-end chains (2024/2025/2026). The three "seeds" in the evaluation artifact are SASRec seeds only. Neither v8 nor v9 alone is evidence about caption effectiveness. That needs 3 chains per arm plus the still-unrun `title-only`/`null`/`shuffle`/`paraphrase` controls. Full numbers, including ckpt-500 and per-seed values, are in `docs/reports/v10-caption-augmentation.md`.
+A second explanation published here, that the training script was *unseeded*, was also wrong and is retracted. The CSFT compatibility patch does remove upstream's `hf_train_dataset.shuffle(seed=seed)`, but `transformers==4.44.2` `Trainer.__init__` itself calls `set_seed(args.seed)` (default `42`), which seeds the `RandomSampler` order and dropout RNG. MNTP calls `set_seed` and `shuffle(seed=42)`, and SimCSE runs with `"seed": 42`. **Every stage of both v8 and v9 therefore already ran with seed 42.**
+
+The per-version Kaggle logs (`research/caption_augmentation/results/{v8,v9}/iem/`) locate the divergence. CSFT ends equal (eval loss 2.252 vs 2.251), and so does MNTP (2.7025 vs 2.6986). SimCSE in v9 destabilizes at steps 910–1000: loss 0.9691 at step 940 against a ≈0.0023 baseline, and grad norm 12.45 at step 990. Checkpoint 1000 is saved inside that spike. Its embeddings are larger (mean norm 131.5 vs 103.8), and its NDCG@10 falls to 0.04155. At checkpoint 500 both runs are stable, and the 0.0018 gap there is within the SASRec seed spread. The upstream SimCSE schedule (5 epochs, stopped at step 1,000) keeps lr ≈1.92e-4 at the checkpoint, which leaves it exposed to such spikes. The real seed defect is different: the pipeline trains only **one chain**, whereas `experiment.json` requires three end-to-end chains (2024/2025/2026). The three "seeds" in the evaluation artifact are SASRec seeds only.
+
+Two further findings limit what v8/v9 can show at all:
+
+- **Captions reach only the CSFT history.** MNTP/SimCSE train on plain `item_titles.txt`, and extraction uses plain `item_titles.json`, so the executed run is the `csft-only` profile.
+- **The caption text carries little new information.** A manual check of 100 items found 69 captions restating the title and 14 adding information, mostly colour. The check also found literal `<pad>` in 61.3% of `real` arm texts and paraphrases identical to the title in 59.1% of items.
+
+Full numbers are in `docs/reports/v10-caption-augmentation.md`; the manual check and the Qwen3-VL captioner plan are in `docs/reports/v10-caption-augmentation-design.md`.
 
 **`v11` status, stated plainly:** an earlier version of this README presented the three `v11` rows above as real single-seed evidence. That is retracted for two reasons.
 
@@ -301,7 +310,9 @@ LLM2Rec-Research/
 │   │   ├── experiment.json             # Frozen protocol: arms, seeds, caps, model pins, quality gates
 │   │   ├── kaggle/                     # Executed Kaggle kernels: full_corpus_generation.ipynb, csft_caption.py,
 │   │   │                               #   iem_caption.py, evaluate_caption.py, tiny_chain_*.py + kernel metadata
-│   │   ├── results/v8/, results/v9/    # Downloaded CSFT/evaluation artifacts and SASRec results.txt per run
+│   │   ├── results/v8/, results/v9/    # CSFT/IEM/evaluation artifacts, SimCSE/MNTP trainer_state logs, SASRec results.txt
+│   │   ├── results/caption_manual_check/  # 100-item title-vs-caption manual labels
+│   │   ├── colab/                      # qwen3vl_caption_pilot.ipynb — Qwen3-VL caption pilot on the same 100 items
 │   │   └── test_*.py                   # stdlib-only regression suite
 │   └── hanorec_cf_hardness/            # v11 — CF-margin/HaRS mixture, SFT+DPO reranking (see its README)
 │       ├── prep.py                     # Train-only pair construction from frozen SASRec candidates
@@ -322,7 +333,7 @@ Before this repository was pushed, it was audited for whether every claimed resu
 | `v0` | `research/baseline/` | Yes — Kaggle kernels, compatibility-profile config, provenance, validator |
 | `v9.0` | `research/multimodal/models/interventional_visual_residual.py` | Yes |
 | `v9.2` | `research/multimodal/models/score_visual_fusion.py`, `preflight.py`, `visual_screen.py` | Yes |
-| `v10` | `research/caption_augmentation/` (module), `kaggle/` (executed kernels), `results/` (v8/v9 artifacts) | Yes |
+| `v10` | `research/caption_augmentation/` (module), `kaggle/` (executed kernels), `colab/` (caption pilot), `results/` (v8/v9 artifacts, manual check) | Yes |
 | `v11` | `research/hanorec_cf_hardness/` (corrected module), `kaggle/` (all pushed kernels, including the self-contained first-implementation runners that produced `results/full_run_265/`), `results/` | Yes |
 
 `v9.1` (sequence-side fusion) has no surviving local module in this fork's own tree. It is documented only in `docs/reports/v0-v9-baseline-and-visual-fusion.md` and in `research/multimodal/README.md`'s history section; its Kaggle kernels were not part of the source directories synced into this repository. This is stated rather than papered over with a placeholder file.
