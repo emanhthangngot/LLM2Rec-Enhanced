@@ -44,9 +44,9 @@ arm results. Each `kernel-metadata-*.json` points `code_file` at its script.
 `results/v8/` and `results/v9/` hold the downloaded artifacts of the two
 `real`-arm runs. v9 includes the history-token-budget fix, which changed
 1 history item. Both runs use a single seed-42 chain, so they are not a
-multi-chain estimate. See `docs/reports/v10-caption-augmentation-teacher-brief.md`
-for the result tables and `docs/reports/v10-caption-corpus-audit.md` for
-the corpus audit.
+multi-chain estimate. See `docs/reports/v10-caption-augmentation.md`
+for the result tables and `docs/reports/v10-caption-augmentation-design.md` for
+the design and corpus audit.
 
 The Python package directory was renamed `caption_augmentation` in this
 repository. The Kaggle packaging code (`package.py`) and the committed

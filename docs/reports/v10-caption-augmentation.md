@@ -92,7 +92,7 @@ Mỗi dòng "v10" là trung bình của 3 seed SASRec trên **một** chain LLM2
 | **v10 real (v9), ckpt‑500** | **0.0809** | **0.0477** | **0.1094** | **0.0549** |
 | **v10 real (v9), ckpt‑1000** | **0.0708** | **0.0416** | **0.0965** | **0.0480** |
 
-Nguồn: paper Table 3 (chép lại trong `README.md`, mục SOTA Landscape); v0 và text-only đã patch: `docs/reports/llm2rec-final-teacher-report.md` §3.1–3.2, NDCG@20/Recall@20 của v0 ckpt‑500 lấy từ R2a recall-scope audit trong workspace nghiên cứu (không đưa vào repo này); v10: `research/caption_augmentation/results/v8/` và `research/caption_augmentation/results/v9/`, file `sasrec_results_step{500,1000}.txt`.
+Nguồn: paper Table 3 (chép lại trong `README.md`, mục SOTA Landscape); v0 và text-only đã patch: `docs/reports/v0-v9-baseline-and-visual-fusion.md` §3.1–3.2, NDCG@20/Recall@20 của v0 ckpt‑500 lấy từ R2a recall-scope audit trong workspace nghiên cứu (không đưa vào repo này); v10: `research/caption_augmentation/results/v8/` và `research/caption_augmentation/results/v9/`, file `sasrec_results_step{500,1000}.txt`.
 
 ### 3.2. Chênh lệch tuyệt đối của arm real so với hai baseline nội bộ
 
@@ -150,6 +150,6 @@ Giá trị = `v10 real − baseline`, cùng checkpoint. Số dương nghĩa là 
 - Code cài đặt: `research/caption_augmentation/kaggle/{full_corpus_generation.ipynb,csft_caption.py,iem_caption.py,evaluate_caption.py}`; module dựng corpus/arm: `research/caption_augmentation/*.py`
 - Artifact CSFT: `research/caption_augmentation/results/{v8,v9}/caption_csft_artifact.json`
 - Artifact đánh giá: `research/caption_augmentation/results/{v8,v9}/games_evaluation_artifact.json`
-- Audit corpus: `docs/reports/v10-caption-corpus-audit.md`
+- Thiết kế chi tiết và audit corpus: `docs/reports/v10-caption-augmentation-design.md`
 - Protocol đóng băng: `research/caption_augmentation/experiment.json`
-- Baseline nội bộ: `docs/reports/llm2rec-final-teacher-report.md` §3
+- Baseline nội bộ: `docs/reports/v0-v9-baseline-and-visual-fusion.md` §3

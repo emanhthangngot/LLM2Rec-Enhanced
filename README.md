@@ -208,7 +208,7 @@ To put `v0`'s reproduction gap and the closed/active generations above in contex
 | LLM2Vec | 0.0740 | 0.0407 | 0.1029 | 0.0480 | Paper Table 3 |
 | LLMEmb (recommendation-specific) | 0.0813 | 0.0487 | 0.1085 | 0.0555 | Paper Table 3 |
 | **LLM2Rec (paper, official, Qwen2-0.5B, full compute)** | **0.0865** | **0.0521** | **0.1157** | **0.0595** | Paper Table 3 |
-| **LLM2Rec (this fork's `v0`, T4 compatibility reproduction, IEM ckpt-1000)** | 0.0821 | 0.0504 | 0.1091 | 0.0572 | `docs/reports/llm2rec-final-teacher-report.md` §3.1, cross-checked against the independent raw-rank audit |
+| **LLM2Rec (this fork's `v0`, T4 compatibility reproduction, IEM ckpt-1000)** | 0.0821 | 0.0504 | 0.1091 | 0.0572 | `docs/reports/v0-v9-baseline-and-visual-fusion.md` §3.1, cross-checked against the independent raw-rank audit |
 
 **Sports (out-of-domain, excluded from CSFT pretraining)**
 
@@ -244,14 +244,14 @@ One caveat, stated rather than smoothed over: this landscape uses the paper's ow
 
 **`v10` status, stated plainly:** an earlier version of this README claimed a "common-history-token-budget" bug (captions inflating token count, causing tail truncation to silently drop more history items in the `real` arm than a title-only run) explained why `real ≈ v0`. That bug was real and is fixed in `research/caption_augmentation/kaggle/csft_caption.py`, but the fix's own instrumentation shows it changed **exactly 1 history item out of ~4.03 million** in the training corpus (`history_items_dropped_for_budget: 1` in `research/caption_augmentation/results/v9/caption_csft_artifact.json`). Yet the v8→v9 retrain moved ckpt-1000 NDCG@10 from `0.04866` to `0.04155`.
 
-A second explanation published here, that the training script was *unseeded*, was also wrong and is retracted. The CSFT compatibility patch does remove upstream's `hf_train_dataset.shuffle(seed=seed)`, but `transformers==4.44.2` `Trainer.__init__` itself calls `set_seed(args.seed)` (default `42`), which seeds the `RandomSampler` order and dropout RNG. MNTP calls `set_seed` and `shuffle(seed=42)`, and SimCSE runs with `"seed": 42`. **Every stage of both v8 and v9 therefore already ran with seed 42.** The remaining variance source is non-deterministic GPU arithmetic (fp16, SDPA backward, atomic reductions) amplified over 1,000 under-converged CSFT steps (inference; not directly measured). The real seed defect is different: the pipeline trains only **one chain**, whereas `experiment.json` requires three end-to-end chains (2024/2025/2026). The three "seeds" in the evaluation artifact are SASRec seeds only. Neither v8 nor v9 alone is evidence about caption effectiveness. That needs 3 chains per arm plus the still-unrun `title-only`/`null`/`shuffle`/`paraphrase` controls. Full numbers, including ckpt-500 and per-seed values, are in `docs/reports/v10-caption-augmentation-teacher-brief.md`.
+A second explanation published here, that the training script was *unseeded*, was also wrong and is retracted. The CSFT compatibility patch does remove upstream's `hf_train_dataset.shuffle(seed=seed)`, but `transformers==4.44.2` `Trainer.__init__` itself calls `set_seed(args.seed)` (default `42`), which seeds the `RandomSampler` order and dropout RNG. MNTP calls `set_seed` and `shuffle(seed=42)`, and SimCSE runs with `"seed": 42`. **Every stage of both v8 and v9 therefore already ran with seed 42.** The remaining variance source is non-deterministic GPU arithmetic (fp16, SDPA backward, atomic reductions) amplified over 1,000 under-converged CSFT steps (inference; not directly measured). The real seed defect is different: the pipeline trains only **one chain**, whereas `experiment.json` requires three end-to-end chains (2024/2025/2026). The three "seeds" in the evaluation artifact are SASRec seeds only. Neither v8 nor v9 alone is evidence about caption effectiveness. That needs 3 chains per arm plus the still-unrun `title-only`/`null`/`shuffle`/`paraphrase` controls. Full numbers, including ckpt-500 and per-seed values, are in `docs/reports/v10-caption-augmentation.md`.
 
 **`v11` status, stated plainly:** an earlier version of this README presented the three `v11` rows above as real single-seed evidence. That is retracted for two reasons.
 
-1. The paired user-level bootstrap on the same six artifacts (20,000 resamples) has a 95% CI that includes zero in **every** weight × metric cell. The median per-user delta is 0, and the gains come from 3–5% of users (`docs/reports/v11-hanorec-paired-bootstrap-audit.md`).
-2. This first-implementation run was later withdrawn as mechanism evidence. It leaked held-out catalog items, admitted training-history negatives, used an unmatched shuffle, used base-model reference semantics, and ran two full-dataset updates instead of the configured mini-batch recipe (`docs/reports/v11-hanorec-fidelity-and-protocol.md`).
+1. The paired user-level bootstrap on the same six artifacts (20,000 resamples) has a 95% CI that includes zero in **every** weight × metric cell. The median per-user delta is 0, and the gains come from 3–5% of users (`docs/reports/v11-hanorec-cf-hardness.md` §2).
+2. This first-implementation run was later withdrawn as mechanism evidence. It leaked held-out catalog items, admitted training-history negatives, used an unmatched shuffle, used base-model reference semantics, and ran two full-dataset updates instead of the configured mini-batch recipe (`docs/reports/v11-hanorec-cf-hardness-design.md` §4).
 
-The corrected implementation (`research/hanorec_cf_hardness/{prep,train,audit}.py`) has run only a correctness smoke and one exploratory 1-seed run (25/25 users, 1 epoch, max_pixels 4096). There, every reranker arm scores **below the frozen SASRec order** on the same candidates (validation NDCG@10 0.0510–0.0761 vs 0.0914) (`docs/reports/v11-hanorec-exploratory-1seed-analysis.md`). The pre-registered 3-seed matrix projects to 87.6–114.3 T4 GPU-hours and has not run.
+The corrected implementation (`research/hanorec_cf_hardness/{prep,train,audit}.py`) has run only a correctness smoke and one exploratory 1-seed run (25/25 users, 1 epoch, max_pixels 4096). There, every reranker arm scores **below the frozen SASRec order** on the same candidates (validation NDCG@10 0.0510–0.0761 vs 0.0914) (`docs/reports/v11-hanorec-cf-hardness.md` §3). The pre-registered 3-seed matrix projects to 87.6–114.3 T4 GPU-hours and has not run.
 
 ## Why Rejected / Limited
 
@@ -325,7 +325,15 @@ Before this repository was pushed, it was audited for whether every claimed resu
 | `v10` | `research/caption_augmentation/` (module), `kaggle/` (executed kernels), `results/` (v8/v9 artifacts) | Yes |
 | `v11` | `research/hanorec_cf_hardness/` (corrected module), `kaggle/` (all pushed kernels, including the self-contained first-implementation runners that produced `results/full_run_265/`), `results/` | Yes |
 
-`v9.1` (sequence-side fusion) has no surviving local module in this fork's own tree — it is documented only in `docs/reports/` and in `research/multimodal/README.md`'s history section; its Kaggle kernels were not part of the source directories synced into this repository. This is stated rather than papered over with a placeholder file.
+`v9.1` (sequence-side fusion) has no surviving local module in this fork's own tree. It is documented only in `docs/reports/v0-v9-baseline-and-visual-fusion.md` and in `research/multimodal/README.md`'s history section; its Kaggle kernels were not part of the source directories synced into this repository. This is stated rather than papered over with a placeholder file.
+
+### Reports (`docs/reports/`)
+
+| Direction | Results / overview | Design, protocol, audits |
+| :--- | :--- | :--- |
+| `v0`–`v9.x` | `v0-v9-baseline-and-visual-fusion.md` | (same file) |
+| `v10` | `v10-caption-augmentation.md` | `v10-caption-augmentation-design.md` |
+| `v11` | `v11-hanorec-cf-hardness.md` | `v11-hanorec-cf-hardness-design.md` |
 
 ---
 
@@ -335,7 +343,7 @@ Before this repository was pushed, it was audited for whether every claimed resu
 
 - Python >= 3.9
 - `torch >= 2.6.0`, `transformers >= 4.44.2`, `llm2vec == 0.2.3`, `flash-attn >= 2.7.4`
-- A CUDA GPU. The compatibility profile used to produce the `v0` baseline numbers above targets a single Kaggle T4 (`sm_75`) and substitutes `SDPA` for FlashAttention‑2 and `FP16` for `BF16` — see `docs/reports/llm2rec-final-teacher-report.md` §2 for the full deviation list.
+- A CUDA GPU. The compatibility profile used to produce the `v0` baseline numbers above targets a single Kaggle T4 (`sm_75`) and substitutes `SDPA` for FlashAttention‑2 and `FP16` for `BF16` — see `docs/reports/v0-v9-baseline-and-visual-fusion.md` §2 for the full deviation list.
 
 ### 2. Environment
 

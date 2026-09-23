@@ -47,15 +47,15 @@ at 87.6–114.3 T4 GPU-hours against an 8-hour ceiling and never ran
 - `full_run_265/` — six `arm_result.json` from the first-implementation run.
   Real beats shuffle on point estimates at every weight (NDCG@10
   0.02420 vs 0.01493 at `w=0.0`), but the paired bootstrap CI crosses zero in
-  every cell (`docs/reports/v11-hanorec-paired-bootstrap-audit.md`). The run's
+  every cell (`docs/reports/v11-hanorec-cf-hardness.md` §2). The run's
   mechanism acceptance was later **withdrawn**. It leaked held-out catalog
   items, admitted training-history negatives, used an unmatched shuffle, used
   base-model reference semantics, and ran two full-dataset updates instead of
-  the mini-batch recipe (`docs/reports/v11-hanorec-fidelity-and-protocol.md`).
+  the mini-batch recipe (`docs/reports/v11-hanorec-cf-hardness-design.md` §4).
 - `exploratory_1seed/` — six arm results and the manifest from the corrected
   implementation. Every reranker arm scores below the frozen SASRec order on
   the same candidates (validation NDCG@10 0.0510–0.0761 vs 0.0914)
-  (`docs/reports/v11-hanorec-exploratory-1seed-analysis.md`).
+  (`docs/reports/v11-hanorec-cf-hardness.md` §3).
 
 The package code (`prep.py`, `train.py`, `audit.py`) is the corrected
 implementation. It is not the code that produced `full_run_265/`; that code

@@ -1,44 +1,8 @@
----
-type: research-report
-topic: "Hai phương pháp LLM2Rec: caption augmentation và CF/history-aware hardness"
-created: 2026-09-20
-scope: "Chỉ mô tả cơ chế, pipeline, đối chứng, đánh giá và rủi ro khoa học của hai phương pháp"
----
+# v10 — Caption Augmentation: thiết kế chi tiết và audit corpus
 
-# Nghiên cứu hai phương pháp LLM2Rec đang hoạt động
+> Tài liệu kỹ thuật đi kèm `v10-caption-augmentation.md` (báo cáo kết quả). Gộp từ: phần Phương pháp 1 của báo cáo nghiên cứu hai phương pháp (2026-09-20), các khó khăn triển khai trong handoff 2026-09-19, và audit corpus V10.
 
-> Báo cáo tập trung vào phần quyết định cách hiểu và tái tạo phương pháp. Các trạng thái vận hành, lịch sử quyết định, lỗi notebook, quota và tiểu tiết đóng gói đã được lược bỏ trừ khi chúng ảnh hưởng trực tiếp đến tính đúng đắn khoa học.
-
-## Mục lục
-
-- [Tóm tắt](#tóm-tắt)
-- [Phạm vi và phương pháp nghiên cứu](#phạm-vi-và-phương-pháp-nghiên-cứu)
-- [Phương pháp 1: Caption augmentation](#phương-pháp-1-caption-augmentation-trước-llm2rec)
-- [Phương pháp 2: HaNoRec CF/history-aware hardness](#phương-pháp-2-hanorec-cfhistory-aware-hardness)
-- [So sánh trực tiếp](#so-sánh-trực-tiếp)
-- [Khuyến nghị thực thi và kiểm định](#khuyến-nghị-thực-thi-và-kiểm-định)
-- [Câu hỏi chưa giải quyết](#câu-hỏi-chưa-giải-quyết)
-- [Tài liệu tham chiếu](#tài-liệu-tham-chiếu)
-
-## Tóm tắt
-
-Hai phương pháp can thiệp vào hai tầng khác nhau của hệ thống. **Caption augmentation** biến hình ảnh catalog thành văn bản offline rồi đưa văn bản đó vào pipeline huấn luyện LLM2Rec. Nó kiểm tra liệu bằng chứng thị giác có giúp học item representation tốt hơn hay không. **HaNoRec CF/history-aware hardness** không huấn luyện lại LLM2Rec hoặc SASRec; nó dùng SASRec đã đóng băng để đo độ khó có điều kiện theo người dùng, sau đó dùng độ khó này để điều chỉnh DPO và rerank top-20 candidate bằng Qwen2.5-VL.
-
-Điểm phân biệt quan trọng: phương pháp thứ nhất thay đổi **thông tin đầu vào và representation được học**; phương pháp thứ hai thay đổi **cường độ tối ưu preference và thứ tự candidate sau truy hồi**. Vì vậy không được gộp chúng thành một claim “multimodal fusion”. Mỗi phương pháp có đối chứng riêng để tách hiệu ứng thật khỏi hiệu ứng văn bản dài hơn, paraphrase, liên kết ảnh sai, semantic similarity hoặc biến thiên của bộ truy hồi.
-
-## Phạm vi và phương pháp nghiên cứu
-
-- **Phạm vi:** mã nguồn, protocol, kế hoạch và artifact mô tả hai thí nghiệm trong handoff `plans/handoffs/two-llm2rec-methods-20260919-1517.md`.
-- **Nguồn nội bộ chính:**
-  - `code/llm2rec/visual_delta_fusion/README.md`
-  - `code/llm2rec/hanorec_cf_hardness/experiment.json`
-  - `plans/260915-0955-visual-delta-fusion-pilot/`
-  - `plans/260918-1114-hanorec-cf-hardness/`
-- **Nguồn bên ngoài đối chiếu:** paper/repository LLM2Rec, paper/repository HaNoRec, model cards Florence-2 và Qwen2.5-VL.
-- **Tiêu chí:** đúng với protocol cục bộ đã đóng băng; phân biệt author claim với phân tích; không coi smoke test, loss hoặc corpus completion là bằng chứng hiệu quả.
-- **Giới hạn:** chưa có kết quả hạ nguồn đầy đủ cho caption augmentation và chưa có kết quả độc lập đầy đủ của sáu nhánh HaNoRec trong nguồn nội bộ được nghiên cứu.
-
-## Phương pháp 1: Caption augmentation trước LLM2Rec
+## 1. Thiết kế phương pháp
 
 ### 1.1. Câu hỏi khoa học
 
@@ -308,185 +272,95 @@ Claim “visual caption có ích” chỉ được chấp nhận nếu `real` v�
 - Arts là replication in-domain, không phải out-of-domain holdout.
 - Caption quality/coverage là điều kiện cần, không phải bằng chứng recommendation effectiveness.
 
-## Phương pháp 2: HaNoRec CF/history-aware hardness
 
-### 2.1. Vấn đề và ý tưởng cốt lõi
+## 2. Các khó khăn triển khai đã gặp
 
-HaNoRec gốc định nghĩa hardness chủ yếu từ quan hệ semantic giữa positive và negative. Cách này không biết bộ truy hồi đang gặp khó khăn đến mức nào đối với **một user và một history cụ thể**. Phương pháp hiện tại bổ sung margin từ SASRec đã đóng băng:
+- Gói `transformers` mặc định của Kaggle không tương thích với config tùy chỉnh của Florence-2; runtime được ghim ở `4.44.2`.
+- Mã từ xa của Florence có đề cập tĩnh tới `flash_attn`; T4/P100 của Kaggle không thể dùng FlashAttention-2. Một bản vá quét import tĩnh có phạm vi giới hạn chỉ loại bỏ yêu cầu không sử dụng này đồng thời ép dùng SDPA.
+- Beam search khiến batch danh nghĩa 64 vượt quá VRAM của T4; cả hai bộ sinh nay đều chia nhỏ batch xuống 4.
+- Một checkpoint kernel tự tham chiếu ban đầu thất bại ở shard 69 dù shard này hợp lệ, vì `str.splitlines()` coi ký tự `U+0085` thô bên trong chuỗi JSON là một dòng mới. Bộ nạp nay chỉ tách byte theo `b"\n"` rồi mới giải mã từng bản ghi.
+- Các ô notebook của Kaggle có timeout phản hồi quan sát được là 1.800 giây; notebook toàn corpus hiện tại trả về giữa các ô và dùng thiết kế deadline mềm/checkpoint cho tác vụ.
+- Quota tuần bị cạn sau V8, rồi được reset; V9 được chấp nhận sau đó.
+- Tốc độ sinh dữ liệu duy trì của V8 xấp xỉ `0.922` bản ghi mới/giây. Đây là tốc độ vận hành đo được, không phải thông lượng của mô hình hạ nguồn.
 
-```text
-m_CF(h_u, i+, i-) = s_SASRec(h_u, i+) - s_SASRec(h_u, i-)
+## 3. Audit corpus V10
+
+
+### Verdict
+
+**PASS for corpus integrity and arm assembly.** The final Kaggle V10 artifact contains the complete 108,753-row AmazonMix-6 catalog. The production loader re-read all shards, verified every manifest SHA-256, and reconstructed contiguous `global_id` order `0..108,752`.
+
+This is an engineering/data-contract result only. It is not evidence that captions improve recommendation quality. Downstream CSFT, MNTP, SimCSE, extraction, SASRec, and independent rank audits remain unexecuted.
+
+### Source artifact
+
+- Kernel: `trixuanle/llm2rec-caption-full-corpus-v2-inline`
+- Stage: `full_corpus_generation`
+- Completion: `COMPLETE`
+- Local audit input: downloaded Kaggle V10 `full_corpus` output (not committed; 213 shards)
+- Shard manifest SHA-256: `521849b297ae9dfce3626f60db48c0facbeaa757bfc343bff2285d3d89af84d7`
+- Caption revision: `f0acedbf9b780e04fe1f9111fcf53187388f3d03`
+- Paraphraser: `Qwen/Qwen2.5-3B-Instruct`, revision `aa8e72537993ba99e69dfaafa59ed015b17504d1`
+- Shard size/count: `512` / `213`
+
+### Coverage
+
+| Quantity | Count | Rate |
+|---|---:|---:|
+| Catalog rows | 108,753 | 100.000% |
+| Decoded images | 108,226 | 99.515% |
+| Valid captions | 108,226 | 99.515% |
+| Valid paraphrases | 108,226 | 99.515% |
+| Rows retained without image/caption | 527 | 0.485% |
+
+Image status breakdown for the 527 unavailable rows: `missing_metadata=409`, `download_failed=98`, `no_asin_in_catalog=20`. These rows remain in the corpus and are not silently dropped.
+
+Catalog block counts match the registered six-domain contract:
+
+- `Arts_Crafts_and_Sewing`: 12,454
+- `Electronics`: 20,150
+- `Home_and_Kitchen`: 33,478
+- `Video_Games`: 9,517
+- `Movies_and_TV`: 13,190
+- `Tools_and_Home_Improvement`: 19,964
+
+### Arm-contract checks
+
+Five downstream arms were materialized from the validated records in ascending `global_id` order: `title-only`, `null`, `real`, `shuffle`, and `paraphrase`.
+
+- Arm key set exact on all `108,753` rows.
+- `title-only` equals the original title on all `108,753` rows.
+- All cue-bearing arms preserve the exact `Title: <original title>` prefix on all `108,753` rows.
+- The available-item set contains `108,226` IDs.
+- Shuffle donors form a bijection over exactly that set: `108,226` unique donors, zero fixed points.
+- No arm rows were dropped during assembly.
+
+The temporary local arm materialization used `write_arm_corpora()` and produced one JSON map plus one line-oriented text file per arm. These files are derived artifacts, not committed binary outputs; the final Kaggle shard records remain the source of truth for downstream packaging.
+
+### Interaction-weighted denominator currently available
+
+The local Games train split provides a downstream sanity denominator only:
+
+- 122,577 training interactions
+- 8,488 unique target IDs
+- 8,482 unique target IDs with valid captions
+- unique-target coverage: 99.929%
+- interaction-weighted coverage: 99.916%
+
+This is not an all-domain interaction-weighted estimate. The remaining domains require their corresponding mixed-corpus interaction files or a Kaggle-side audit before reporting a global interaction-weighted denominator.
+
+### Reproduction
+
+The audit used the production loader and arm serializer, not a second parser:
+
+```bash
+cd research && python -m unittest discover -s caption_augmentation -p 'test_*.py'
 ```
 
-Margin nhỏ nghĩa là SASRec khó phân biệt positive với hard negative trong context đó. Tín hiệu này không thay semantic hardness; nó tạo một trục hardness cộng tác, có điều kiện theo user/history.
+The next execution boundary is the tiny real-data end-to-end chain. It must first consume this manifest, reject stale/wrong-arm inputs by hash, and prove target preservation, item order, masks, causal/bidirectional checks, and checkpoint ancestry before any full training matrix is scheduled.
 
-### 2.2. Kiến trúc
-
-```mermaid
-flowchart LR
-    A[Frozen LLM2Rec title embeddings] --> B[Frozen SASRec]
-    H[Train histories + targets] --> B
-    B --> C[Top non-target hard negatives]
-    B --> D[Real top-20 test candidates]
-    E[Item title + image] --> F[Qwen2.5-VL]
-    F --> G[Semantic hardness lambda_sem]
-    C --> I[CF margin lambda_cf]
-    G --> J[lambda_sem^w * lambda_cf^(1-w)]
-    I --> J
-    H --> K[Qwen2.5-VL LoRA SFT]
-    K --> L[Hardness-scaled DPO + NoDO]
-    J --> L
-    L --> M[log P(Yes) - log P(No)]
-    D --> M
-    M --> N[Reranked top-20]
-```
-
-Phương pháp giữ nguyên backbone retrieval để câu hỏi chỉ còn là: **hardness có điều kiện theo CF giúp preference optimization/reranking tốt hơn semantic hardness không?** Nếu retriever cũng được thay đổi đồng thời, không thể biết gain đến từ hardness hay từ retrieval.
-
-### 2.3. Dữ liệu đầu vào và pair construction
-
-- Frozen LLM2Rec title embeddings từ checkpoint Qwen2-0.5B.
-- Frozen SASRec Games, hidden size 128, 2 layers, 2 heads, dropout 0.3, max history length 10.
-- Mỗi training row cần ít nhất ba item history; dùng ba item cuối trước target làm `h_u`.
-- Positive `i+` là target kế tiếp thực.
-- Chấm điểm toàn catalog bằng SASRec.
-- Negative `i-` là non-target có score cao nhất sau khi loại padding và các tương tác tương lai đã biết bằng prefix expansion chính xác.
-- Lưu `cf_margin` cùng mọi định danh và thứ tự item.
-
-Loại trừ future interactions giảm false negative, nhưng không giải quyết được positive chưa quan sát. Vì vậy negative được gọi là “hard candidate”, không được diễn giải chắc chắn là item user không thích.
-
-Đánh giá dùng đúng top-20 candidate do SASRec sinh ra. Target không được chèn nhân tạo. Do đó `candidate_recall@20` là trần của reranker: target không nằm trong candidate thì reranker không thể khôi phục.
-
-### 2.4. Hai nguồn hardness và cách kết hợp
-
-**Semantic hardness.** Qwen2.5-VL tạo text/vision embeddings; similarity profile của item được chọn và item bị từ chối được xây từ top-K neighborhood, rồi đo khoảng cách giữa hai profile và chuẩn hóa theo quy ước HaNoRec.
-
-**CF hardness.** Protocol cố định:
-
-```text
-lambda_cf = sigmoid(m_CF) / sigmoid(mean(m_CF over batch))
-```
-
-Không được đảo dấu sau khi thấy kết quả. Tên “hardness” phụ thuộc quy ước scaling của HaNoRec; điều cần bảo toàn là đúng công thức và đúng mapping vào DPO.
-
-**Geometric mixture:**
-
-```text
-lambda_combined = lambda_sem^w * lambda_cf^(1-w)
-```
-
-Ba nhánh:
-
-- `w=1.0`: semantic-only, đối chứng HaNoRec.
-- `w=0.0`: CF-only.
-- `w=0.5`: kết hợp hai nguồn.
-
-Mỗi nhánh chạy với ảnh `real` và ảnh `shuffle`, tổng cộng sáu cell. Real–shuffle phải dùng cùng pair/candidate protocol; nếu không, chênh lệch có thể do sample composition thay vì visual evidence.
-
-### 2.5. SFT, DPO và reranking
-
-**Policy.** Qwen2.5-VL-3B-Instruct được nạp 4-bit, fine-tune bằng LoRA trên `q_proj`, `k_proj`, `v_proj`, `o_proj`, rank 8, alpha 32, dropout 0.05.
-
-**SFT.** Prompt chứa ba item history và một candidate, mỗi item có title/image. Model trả lời binary:
-
-```text
-Based on the user's history, will they like this candidate item next? Answer Yes or No.
-```
-
-Positive được huấn luyện là `Yes`. Bundle SFT phải bảo toàn pair, eval rows, image paths/hashes, hardness arrays, item order và reference metadata.
-
-**DPO.** Mỗi training pair tạo hai preference examples:
-
-- positive: chọn `Yes`, từ chối `No`;
-- hard negative: chọn `No`, từ chối `Yes`.
-
-Responsiveness và hardness điều chỉnh beta theo từng example:
-
-```text
-beta_i = max(1e-6, beta0 * responsiveness_i * lambda_combined_i)
-```
-
-NoDO tạm thời perturb LoRA parameters trong policy forward. Reference forward dùng base model với adapter disabled và không bị perturb. Loss là negative log-sigmoid của policy-vs-reference preference logit đã scaling. Fail-closed khi loss non-finite hoặc LoRA không thay đổi.
-
-**Reranking.** Mỗi candidate trong real top-20 được chấm đúng một lần bằng:
-
-```text
-score(candidate) = log P(Yes) - log P(No)
-```
-
-Sắp xếp giảm dần; lưu ranking, target rank, `NDCG@10`, `Recall@10` và `candidate_recall@20`.
-
-### 2.6. Quy mô và chỉ số
-
-Protocol full run cố định ở 530 training pairs, 265 evaluation users, history length 3, top-20 candidates, seed 2024, hai bước SFT và hai bước DPO. Đây là quy mô theo ngân sách, không phải full convergence hay variance estimate đủ cho publication.
-
-Chỉ số chính:
-
-- `NDCG@10` sau rerank trên SASRec real top-20.
-- `Recall@10` trên cùng candidate set.
-- `candidate_recall@20` như diagnostic ceiling, phải báo cáo riêng.
-
-Phép tương phản bắt buộc là `real - shuffle` tại từng `w`. Quy tắc thắng chỉ hợp lệ khi confidence interval của contrast không chứa zero. Không được lấy một mean tốt tại `w=0.5` làm kết luận nếu không so với `w=1`, `w=0` và shuffle tương ứng. HR@3/NDCG@3 của protocol HaNoRec gốc là phụ, không được trộn với top-20 LLM2Rec protocol.
-
-### 2.7. Rủi ro diễn giải
-
-- Hard negative có thể là positive chưa quan sát; DPO có thể học từ nhãn sai.
-- Reranker bị giới hạn bởi candidate recall; gain không đồng nghĩa retriever tốt hơn.
-- Một seed, hai bước và 530 pairs chỉ đủ cho feasibility/controlled comparison, không đủ khẳng định ổn định.
-- Real–shuffle có thể bị nhiễu bởi ảnh lỗi, khác biệt preprocessing hoặc pair mismatch; hash và row identity phải được audit.
-- Chi phí Qwen2.5-VL lặp lại cho sáu nhánh khiến sample size nhỏ; confidence interval quan trọng hơn loss.
-
-## So sánh trực tiếp
-
-| Chiều | Caption augmentation | HaNoRec CF/history-aware hardness |
-|---|---|---|
-| Tầng can thiệp | Trước CSFT và item embedding extraction | Preference weighting và reranking sau frozen retrieval |
-| LLM multimodal | Florence-2 chuyển ảnh thành text offline | Qwen2.5-VL trực tiếp đọc title + image |
-| LLM2Rec/SASRec | Chạy lại tương ứng theo từng text arm | Embeddings và SASRec đóng băng |
-| Tín hiệu mới | Caption liên kết item–ảnh | Margin SASRec có điều kiện theo user/history |
-| Đầu ra | Item embeddings mới rồi SASRec ranking | Top-20 candidate được rerank |
-| Đối chứng quyết định | `title-only`, `null`, `shuffle`, `paraphrase` | real vs shuffle tại `w=1, 0, 0.5` |
-| Claim cần kiểm tra | Visual evidence cải thiện representation/recommendation | CF-aware hardness cải thiện adaptive preference/reranking |
-| Trần đánh giá | Full-catalog ranking | Candidate recall@20 của frozen SASRec |
-| Rủi ro lớn nhất | Textual/length/OCR confound | False negative và candidate ceiling |
-
-Hai phương pháp có thể bổ trợ về mặt nghiên cứu nhưng không nên ghép trước khi đánh giá độc lập. Caption augmentation trả lời “nên đưa bằng chứng ảnh vào representation bằng text hay không?”. HaNoRec trả lời “sau khi retriever đã chọn candidate, nên ưu tiên học những cặp nào và với cường độ nào?”.
-
-## Khuyến nghị thực thi và kiểm định
-
-1. **Caption:** hoàn tất và audit catalog corpus trước; kiểm tra coverage, manifest, hash, ID continuity và common-history suffix. Chỉ sau đó mới chạy năm text arms và downstream DAG.
-2. **Caption:** khóa cùng split, seed, target, truncation và SASRec configuration giữa các arms. Báo cáo real–shuffle cùng paraphrase/null, không chỉ real–title.
-3. **HaNoRec:** xác minh SFT bundle trước khi chạy nhánh DPO. Mọi nhánh phải trỏ đến đúng frozen embeddings, SASRec checkpoint, pair order và image hashes.
-4. **HaNoRec:** giữ candidate set nguyên bản của SASRec; báo cáo `candidate_recall@20` cạnh NDCG/Recall để không nhầm reranking gain với retrieval gain.
-5. **Cả hai:** lưu kết quả âm, nhánh bị bỏ qua và confidence interval; `COMPLETE`, loss giảm hoặc average dương không phải bằng chứng khoa học.
-6. **Diễn giải:** tách ba câu hỏi: có tín hiệu ảnh không, tín hiệu ảnh có được dùng đúng item không, và tín hiệu đó có cải thiện metric với bất định chấp nhận được không.
-
-## Câu hỏi chưa giải quyết
-
-- Caption `real` có vượt `shuffle` sau khi kiểm soát paraphrase, placeholder và token budget không?
-- Caption tạo giá trị ở CSFT, MNTP/SimCSE, hay chỉ do thay đổi history truncation?
-- CF hardness có cải thiện so với semantic-only ở cả ba `w` khi confidence interval được tính trên cùng pair/candidate set không?
-- Mức candidate recall của SASRec giới hạn bao nhiêu phần trăm lợi ích tối đa của HaNoRec?
-- Các hard negative chưa quan sát có làm thay đổi kết luận DPO không?
-- Kết quả có tái lập ngoài Games/Arts hoặc với thêm seed không?
-
-## Tài liệu tham chiếu
-
-### Nguồn nội bộ
-
-- `plans/handoffs/two-llm2rec-methods-20260919-1517.md`
-- `code/llm2rec/visual_delta_fusion/README.md`
-- `code/llm2rec/hanorec_cf_hardness/experiment.json`
-- `plans/260915-0955-visual-delta-fusion-pilot/plan.md`
-- `plans/260918-1114-hanorec-cf-hardness/plan.md`
-
-### Nguồn bên ngoài
+## 4. Tài liệu tham chiếu ngoài
 
 - [LLM2Rec repository](https://github.com/HappyPointer/LLM2Rec) — upstream implementation.
 - [LLM2Rec paper](https://arxiv.org/html/2506.21579v1) — LLM adaptation, MNTP/contrastive embedding pipeline and sequential recommendation context.
-- [HaNoRec repository](https://github.com/wangyu0627/HaNoRec) — upstream hardness-aware multimodal preference optimization implementation.
-- [HaNoRec paper](https://arxiv.org/abs/2511.18740) — HaRS/NoDO motivation and preference optimization design.
 - [Florence-2 model card](https://huggingface.co/microsoft/Florence-2-large) — image-to-text model and captioning tasks.
-- [Qwen2.5-VL documentation](https://huggingface.co/docs/transformers/model_doc/qwen2_5_vl) — multimodal model interface and supported inputs.
-
-*Research conducted: 2026-09-20.*
