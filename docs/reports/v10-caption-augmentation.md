@@ -1,6 +1,6 @@
 # Hướng v10 — Caption Augmentation cho LLM2Rec: giới thiệu phương pháp và kết quả hiện tại
 
-> Tài liệu giới thiệu cho giáo viên hướng dẫn. Mọi con số là giá trị tuyệt đối (không dùng %), lấy trực tiếp từ artifact Kaggle đã tải về hoặc từ báo cáo đã audit; nguồn ghi ở cuối mỗi bảng.
+> Tài liệu giới thiệu cho giáo viên hướng dẫn. Số liệu metric là giá trị tuyệt đối; riêng bảng chênh lệch 3.2 ghi thêm % tương đối trong ngoặc. Tất cả lấy trực tiếp từ artifact Kaggle đã tải về hoặc từ báo cáo đã audit; nguồn ghi ở cuối mỗi bảng.
 > Trạng thái: **đang chạy, chưa có kết luận khoa học**. Mới có arm `real`, với **1 chain huấn luyện** (chạy 2 lần: v8 và v9); các arm đối chứng chưa chạy.
 
 ---
@@ -94,20 +94,20 @@ Mỗi dòng "v10" là trung bình của 3 seed SASRec trên **một** chain LLM2
 
 Nguồn: paper Table 3 (chép lại trong `README.md`, mục SOTA Landscape); v0 và text-only đã patch: `docs/reports/v0-v9-baseline-and-visual-fusion.md` §3.1–3.2, NDCG@20/Recall@20 của v0 ckpt‑500 lấy từ R2a recall-scope audit trong workspace nghiên cứu (không đưa vào repo này); v10: `research/caption_augmentation/results/v8/` và `research/caption_augmentation/results/v9/`, file `sasrec_results_step{500,1000}.txt`.
 
-### 3.2. Chênh lệch tuyệt đối của arm real so với hai baseline nội bộ
+### 3.2. Chênh lệch của arm real so với hai baseline nội bộ (tuyệt đối và %)
 
-Giá trị = `v10 real − baseline`, cùng checkpoint. Số dương nghĩa là real cao hơn.
+Mỗi ô ghi `Δ tuyệt đối (Δ %)`, với Δ = `v10 real − baseline` cùng checkpoint và Δ % = Δ / baseline × 100. Số dương nghĩa là real cao hơn. Phép tính dùng giá trị chưa làm tròn: Recall@10/NDCG@10 của v0 lấy từ báo cáo audit (0.082077051 / 0.049752161 ở ckpt‑500, 0.082055299 / 0.050377072 ở ckpt‑1000). Recall@20/NDCG@20 của v0 ckpt‑1000 chỉ có 4 chữ số thập phân (0.1091 / 0.0572).
 
 | Checkpoint | So sánh | ΔRecall@10 | ΔNDCG@10 | ΔRecall@20 | ΔNDCG@20 |
 |---|---|---:|---:|---:|---:|
-| 500 | v8 − v0 | +0.00035 | −0.00026 | +0.00011 | −0.00032 |
-| 500 | v9 − v0 | −0.00113 | −0.00203 | +0.00037 | −0.00166 |
-| 1000 | v8 − v0 | +0.00043 | −0.00174 | +0.00252 | −0.00119 |
-| 1000 | v9 − v0 | −0.01127 | −0.00885 | −0.01264 | −0.00920 |
-| 500 | v8 − text đã patch | +0.00424 | +0.00313 | — | — |
-| 500 | v9 − text đã patch | +0.00276 | +0.00135 | — | — |
-| 1000 | v8 − text đã patch | +0.00309 | +0.00116 | — | — |
-| 1000 | v9 − text đã patch | −0.00861 | −0.00595 | — | — |
+| 500 | v8 − v0 | +0.00035 (+0.42%) | −0.00026 (−0.52%) | +0.00011 (+0.10%) | −0.00032 (−0.56%) |
+| 500 | v9 − v0 | −0.00113 (−1.38%) | −0.00203 (−4.09%) | +0.00037 (+0.34%) | −0.00166 (−2.93%) |
+| 1000 | v8 − v0 | +0.00048 (+0.58%) | −0.00171 (−3.40%) | +0.00252 (+2.31%) | −0.00119 (−2.08%) |
+| 1000 | v9 − v0 | −0.01122 (−13.68%) | −0.00883 (−17.52%) | −0.01264 (−11.59%) | −0.00920 (−16.08%) |
+| 500 | v8 − text đã patch | +0.00424 (+5.43%) | +0.00313 (+6.75%) | — | — |
+| 500 | v9 − text đã patch | +0.00276 (+3.53%) | +0.00135 (+2.92%) | — | — |
+| 1000 | v8 − text đã patch | +0.00309 (+3.89%) | +0.00116 (+2.45%) | — | — |
+| 1000 | v9 − text đã patch | −0.00861 (−10.84%) | −0.00595 (−12.53%) | — | — |
 
 Để so sánh: độ lệch chuẩn NDCG@10 giữa 3 seed SASRec **trong cùng một chain** đã là 0.00150–0.00374, tức ngang hoặc lớn hơn phần lớn các chênh lệch ở trên.
 
