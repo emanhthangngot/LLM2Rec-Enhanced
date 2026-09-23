@@ -1,0 +1,10 @@
+{
+  "notebook": true,
+  "stage": "phase_2_preflight",
+  "protocol": "plans/260918-1114-hanorec-cf-hardness/phase-01-local-spec-and-audit.md",
+  "purpose": "Fail-closed compatibility and formula preflight; no training",
+  "source_pins": {
+    "llm2rec": "73b481f710f67166ab958f4985d27b27fb410871",
+    "hanorec": "587face74524e4553b5a7aa295fe962004682382"
+  }
+}

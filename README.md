@@ -34,7 +34,7 @@ Two structural lessons carry across every generation:
 | **v9.1** | `Sequence-Side-Fusion` (S1/S2) | Visual signal folded into the user-sequence hidden state | **Rejected** | Games | SASRec |
 | **v9.2** | `Frozen-Score-Residual` | `score_final = score_text + α·z_visual` at the ranking boundary; text recommender and candidate table stay frozen | **Closed — conditional positive, program exhausted (`STOP2`)** | Games (dev), Sports (transfer) | SASRec, BERT4Rec |
 | **v10** *(active)* | `Caption-Augmentation` | Florence‑2 offline image→text captions injected into CSFT/MNTP/SimCSE input history via 5 controlled arms (`title-only`/`null`/`real`/`shuffle`/`paraphrase`) | **Running — corpus complete (108,753 items, 108,226 captioned); `real` arm trained twice on one seed-42 chain (v8, v9) with a large run-to-run swing; 4/5 arms and 3-chain seeding remaining** | Games (dev), Arts (replication), AmazonMix-6 (pretrain); Baby reserved sealed | SASRec (matched) |
-| **v11** *(active)* | `HaNoRec-CF-Hardness` | Freeze LLM2Rec + SASRec; blend a CF score margin (`w ∈ {1.0, 0.5, 0.0}`) with HaNoRec's semantic hardness to weight a DPO-tuned Qwen2.5‑VL reranker over SASRec's real top‑20 | **Full-scale (265-user) run complete, 1 seed; additional seeds pending for a confidence interval** | Games only | Qwen2.5-VL reranker over SASRec |
+| **v11** *(active)* | `HaNoRec-CF-Hardness` | Freeze LLM2Rec + SASRec; blend a CF score margin with HaNoRec's semantic hardness (`λ = λ_sem^w · λ_cf^(1−w)`, `w ∈ {1.0, 0.5, 0.0}`) to weight a DPO-tuned Qwen2.5‑VL reranker over SASRec's real top‑20 | **Blocked — first-implementation 265-user run withdrawn (leakage, unmatched shuffle); corrected implementation's exploratory 1-seed run shows no signal above SASRec order; frozen 3-seed matrix does not fit the GPU budget (`BLOCKED_NO_FIT`)** | Games only | Qwen2.5-VL reranker over SASRec |
 
 Results and rejection reasons are pulled out into their own tables below (`Results vs. Baseline` and `Why Rejected / Limited`) instead of being packed into this overview.
 
@@ -168,7 +168,7 @@ flowchart TB
     N --> O[NDCG@10 / Recall@10 / candidate Recall@20]
 ```
 
-`w = 1.0` uses pure CF hardness, `w = 0.0` uses pure HaNoRec semantic hardness, `w = 0.5` mixes both — the six branch kernels are `{w} x {real, shuffle}`, where `shuffle` breaks the item-image link the same way it does in `v10`, to isolate whether the hardness signal is doing anything beyond a generic difficulty prior.
+`w = 1.0` uses pure HaNoRec semantic hardness, `w = 0.0` uses pure CF hardness, and `w = 0.5` mixes both (`research/hanorec_cf_hardness/train.py:637-641`). The six branch kernels are `{w} x {real, shuffle}`. `shuffle` breaks the item-image link the same way it does in `v10`, to isolate whether the hardness signal does anything beyond a generic difficulty prior.
 
 ---
 
@@ -238,13 +238,20 @@ One caveat, stated rather than smoothed over: this landscape uses the paper's ow
 | `v9.2` `C0.5` matched-shuffle | BERT4Rec | patched-IEM | novel-only, ATE | −0.00010 (shuffle ATE) | 0.00141 (real ATE) | `+0.00151`, CI `[0.00086, 0.00214]` | — | — | — | **`PASS_VISUAL_SPECIFICITY`** |
 | `v10` `real` arm (v8, pre-fix, history-budget confound present) | SASRec | seed-42 chain, ckpt-1000 | all rows | 0.0504 (`v0`) | 0.04866 | `-3.41%` | 0.0821 (`v0`) | 0.08253 | `+0.57%` | **Preliminary** — 1 chain, no matched control; see note below |
 | `v10` `real` arm (v9, history-budget fix applied, full retrain) | SASRec | seed-42 chain, ckpt-1000 | all rows | 0.0504 (`v0`) | 0.04155 | `-17.56%` | 0.0821 (`v0`) | 0.07083 | `-13.73%` | **Preliminary** — same chain as v8, reruns disagree; see note below |
-| `v11` HaNoRec, `w=0.0` (semantic only) | Qwen2.5-VL reranker | 265-user, 1 seed | test rows | 0.01493 (shuffle) | 0.02420 | `+62.10%` | 0.03774 (shuffle) | 0.06415 | `+70.00%` | **Preliminary** — 1 seed, no CI yet |
-| `v11` HaNoRec, `w=0.5` (mixed) | Qwen2.5-VL reranker | 265-user, 1 seed | test rows | 0.01507 (shuffle) | 0.02207 | `+46.46%` | 0.03774 (shuffle) | 0.05660 | `+50.00%` | **Preliminary** — 1 seed, no CI yet |
-| `v11` HaNoRec, `w=1.0` (CF only) | Qwen2.5-VL reranker | 265-user, 1 seed | test rows | 0.01473 (shuffle) | 0.02279 | `+54.69%` | 0.03774 (shuffle) | 0.06038 | `+60.00%` | **Preliminary** — 1 seed, no CI yet |
+| `v11` HaNoRec, `w=0.0` (CF only), first implementation | Qwen2.5-VL reranker | 265-user, 1 seed | test rows | 0.01493 (shuffle) | 0.02420 | `+62.10%` | 0.03774 (shuffle) | 0.06415 | `+70.00%` | **Withdrawn**: paired CI crosses zero; protocol defects (see note) |
+| `v11` HaNoRec, `w=0.5` (mixed), first implementation | Qwen2.5-VL reranker | 265-user, 1 seed | test rows | 0.01507 (shuffle) | 0.02207 | `+46.46%` | 0.03774 (shuffle) | 0.05660 | `+50.00%` | **Withdrawn**: paired CI crosses zero; protocol defects (see note) |
+| `v11` HaNoRec, `w=1.0` (semantic only), first implementation | Qwen2.5-VL reranker | 265-user, 1 seed | test rows | 0.01473 (shuffle) | 0.02279 | `+54.69%` | 0.03774 (shuffle) | 0.06038 | `+60.00%` | **Withdrawn**: paired CI crosses zero; protocol defects (see note) |
 
 **`v10` status, stated plainly:** an earlier version of this README claimed a "common-history-token-budget" bug (captions inflating token count, causing tail truncation to silently drop more history items in the `real` arm than a title-only run) explained why `real ≈ v0`. That bug was real and is fixed in `research/caption_augmentation/kaggle/csft_caption.py`, but the fix's own instrumentation shows it changed **exactly 1 history item out of ~4.03 million** in the training corpus (`history_items_dropped_for_budget: 1` in `research/caption_augmentation/results/v9/caption_csft_artifact.json`). Yet the v8→v9 retrain moved ckpt-1000 NDCG@10 from `0.04866` to `0.04155`.
 
 A second explanation published here, that the training script was *unseeded*, was also wrong and is retracted. The CSFT compatibility patch does remove upstream's `hf_train_dataset.shuffle(seed=seed)`, but `transformers==4.44.2` `Trainer.__init__` itself calls `set_seed(args.seed)` (default `42`), which seeds the `RandomSampler` order and dropout RNG. MNTP calls `set_seed` and `shuffle(seed=42)`, and SimCSE runs with `"seed": 42`. **Every stage of both v8 and v9 therefore already ran with seed 42.** The remaining variance source is non-deterministic GPU arithmetic (fp16, SDPA backward, atomic reductions) amplified over 1,000 under-converged CSFT steps (inference; not directly measured). The real seed defect is different: the pipeline trains only **one chain**, whereas `experiment.json` requires three end-to-end chains (2024/2025/2026). The three "seeds" in the evaluation artifact are SASRec seeds only. Neither v8 nor v9 alone is evidence about caption effectiveness. That needs 3 chains per arm plus the still-unrun `title-only`/`null`/`shuffle`/`paraphrase` controls. Full numbers, including ckpt-500 and per-seed values, are in `docs/reports/v10-caption-augmentation-teacher-brief.md`.
+
+**`v11` status, stated plainly:** an earlier version of this README presented the three `v11` rows above as real single-seed evidence. That is retracted for two reasons.
+
+1. The paired user-level bootstrap on the same six artifacts (20,000 resamples) has a 95% CI that includes zero in **every** weight × metric cell. The median per-user delta is 0, and the gains come from 3–5% of users (`docs/reports/v11-hanorec-paired-bootstrap-audit.md`).
+2. This first-implementation run was later withdrawn as mechanism evidence. It leaked held-out catalog items, admitted training-history negatives, used an unmatched shuffle, used base-model reference semantics, and ran two full-dataset updates instead of the configured mini-batch recipe (`docs/reports/v11-hanorec-fidelity-and-protocol.md`).
+
+The corrected implementation (`research/hanorec_cf_hardness/{prep,train,audit}.py`) has run only a correctness smoke and one exploratory 1-seed run (25/25 users, 1 epoch, max_pixels 4096). There, every reranker arm scores **below the frozen SASRec order** on the same candidates (validation NDCG@10 0.0510–0.0761 vs 0.0914) (`docs/reports/v11-hanorec-exploratory-1seed-analysis.md`). The pre-registered 3-seed matrix projects to 87.6–114.3 T4 GPU-hours and has not run.
 
 ## Why Rejected / Limited
 
@@ -256,9 +263,9 @@ Rejection and limitation reasons for every generation that did **not** end up in
 | `v9.1` sequence-side fusion (S1/S2) | **Rejected** | `92%` of the apparent gain traced to `740` immediate-repeat rows; a recency-only reranker with **zero image input** beats it on the same slice on all 3 seeds — the fused state learned to copy the last interacted item, not visual semantics |
 | `v9.2` frozen score-residual — Sports transfer | Limitation | CSFT/IEM were never tuned on the Sports domain; the frozen visual profile and score-boundary calibration learned on Games don't carry over — real visual barely edges out a matched shuffle (`+0.000016` mean NDCG@10) and loses to plain text |
 | `v9.2` frozen score-residual — GRU4Rec backbone | Limitation | GRU4Rec's own text-only baseline is near-degenerate (`~0.0007` NDCG@10), so a large relative visual gain there fills near-empty signal rather than proving visual content matters; a text-PCA control (`0.01665`) beats real visual outright on this backbone |
-| `v11` HaNoRec exploratory pilot (1-seed, 25 eval users, superseded) | Superseded by the 265-user run above | All 6 branches completed but scored `NDCG@10 ≈ 0`/`Recall@10 ≈ 0` on 5 of 6; `candidate_recall@20` was only `0.04` on every branch. Diagnosed as a small-sample artifact, not a method or code defect: at SASRec's independently-known ~11% Recall@20, 25 users yields an expected ~2.7 hits, so 1 observed hit is unremarkable binomial variance. Confirmed by the 265-user rerun, whose `candidate_recall@20 = 0.117` lands almost exactly on that same ~11% ceiling — kept here as the documented reason the pilot alone was not trusted |
+| `v11` HaNoRec exploratory 1-seed run (corrected implementation, 25/25 users) | Exploratory — `NO_SIGNAL_ABOVE_RETRIEVER` | Only 6/25 validation users and 1/25 test users have the target in SASRec's top-20. That explains the test `NDCG@10 ≈ 0` and `candidate_recall@20 = 0.04`. On informative users every arm is below the SASRec order, and the reranker order is weakly anti-correlated with it (mean Spearman −0.02 to −0.12). Open protocol issues: `lambda_cf` spans 0.00095–24.8 (unclamped by design), and max_pixels 4096 leaves ~64×64 images. This run is *newer* than the withdrawn 265-user run, not superseded by it |
 
-The `v9.2` Sports-transfer and GRU4Rec rows are why it is reported as **Games-conditional**, not a general method, despite passing `C0.5` on that one dataset. The `v11` pilot row is a different kind of caveat: not a negative result, a **statistically uninformative** one that the full-scale run above has since superseded with a real signal.
+The `v9.2` Sports-transfer and GRU4Rec rows are why it is reported as **Games-conditional**, not a general method, despite passing `C0.5` on that one dataset. The `v11` row is exploratory and non-confirmatory, and so far it is negative against the retriever itself.
 
 ---
 
@@ -296,11 +303,15 @@ LLM2Rec-Research/
 │   │   │                               #   iem_caption.py, evaluate_caption.py, tiny_chain_*.py + kernel metadata
 │   │   ├── results/v8/, results/v9/    # Downloaded CSFT/evaluation artifacts and SASRec results.txt per run
 │   │   └── test_*.py                   # stdlib-only regression suite
-│   └── hanorec_cf_hardness/            # v11 — CF-margin/HaRS mixture, SFT+DPO reranking
-│       ├── prep.py                     # Real pair construction from frozen SASRec candidates
-│       ├── train.py                    # Qwen2.5-VL LoRA SFT + hardness-scaled DPO
-│       ├── audit.py                    # Independent artifact/hash/metric audit
-│       └── experiment.json             # Frozen protocol: pair counts, seeds, weights, artifact pins
+│   └── hanorec_cf_hardness/            # v11 — CF-margin/HaRS mixture, SFT+DPO reranking (see its README)
+│       ├── prep.py                     # Train-only pair construction from frozen SASRec candidates
+│       ├── train.py                    # Qwen2.5-VL LoRA SFT + hardness-scaled DPO (corrected implementation)
+│       ├── audit.py                    # Fail-closed protocol/artifact audit
+│       ├── experiment.json, run-protocol.json  # Frozen protocol, pinned inputs
+│       ├── scripts/                    # Generators that reproduce kaggle/*/runner.py byte-for-byte
+│       ├── kaggle/                     # All 21 pushed v11 kernels + kernel metadata
+│       ├── results/                    # full_run_265/ (withdrawn), exploratory_1seed/
+│       └── test_hanorec_*.py           # Fidelity and protocol regression tests
 
 ### Source code audit
 
@@ -312,7 +323,7 @@ Before this repository was pushed, it was audited for whether every claimed resu
 | `v9.0` | `research/multimodal/models/interventional_visual_residual.py` | Yes |
 | `v9.2` | `research/multimodal/models/score_visual_fusion.py`, `preflight.py`, `visual_screen.py` | Yes |
 | `v10` | `research/caption_augmentation/` (module), `kaggle/` (executed kernels), `results/` (v8/v9 artifacts) | Yes |
-| `v11` | `research/hanorec_cf_hardness/` | Yes |
+| `v11` | `research/hanorec_cf_hardness/` (corrected module), `kaggle/` (all pushed kernels, including the self-contained first-implementation runners that produced `results/full_run_265/`), `results/` | Yes |
 
 `v9.1` (sequence-side fusion) has no surviving local module in this fork's own tree — it is documented only in `docs/reports/` and in `research/multimodal/README.md`'s history section; its Kaggle kernels were not part of the source directories synced into this repository. This is stated rather than papered over with a placeholder file.
 
@@ -398,7 +409,7 @@ Cite the upstream paper if you build on the baseline pipeline:
 ## Unresolved Questions
 
 - `v10`: does a correctly-linked image caption improve recommendation beyond `title-only`, `null`, `shuffle`, and `paraphrase` controls on **both** Games and Arts, at the pre-registered family-wise significance level? Not yet answered. The corpus is complete, but only the `real` arm has run, on a single seed-42 chain.
-- `v11`: does CF-margin-weighted DPO (`w ∈ {0.5, 1.0}`) beat pure semantic hardness (`w = 0`) on reranking SASRec's real top-20? Not yet answered — full six-arm run is unverified.
+- `v11`: does any hardness-weighted DPO Qwen2.5‑VL reranker beat SASRec's own order on informative users at all? Only if it does can the `w` or `real`/`shuffle` contrasts mean anything. Not yet answered. The only corrected-implementation run so far (exploratory, 1 seed, 25 users) says no.
 - Neither `v10` nor `v11` has been tested on Sports or the sealed Baby split; whether either replicates the `v9.2` failure-to-transfer pattern is open.
 - Whether `v10`'s text-mediated visual signal and `v11`'s CF-hardness reranking are complementary (stackable) or redundant has not been investigated; they currently run as fully independent generations.
 

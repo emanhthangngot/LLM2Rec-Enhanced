@@ -1,0 +1,21 @@
+{
+  "id": "trlxun/hanorec-cf-hardness-arm-w05-real",
+  "title": "hanorec-cf-hardness-arm-w05-real",
+  "code_file": "runner.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_tpu": false,
+  "enable_internet": true,
+  "keywords": [],
+  "dataset_sources": [
+    "trixuanle/llm2rec-amazonmix6-5core"
+  ],
+  "kernel_sources": [
+    "trlxun/hanorec-cf-hardness-sft"
+  ],
+  "competition_sources": [],
+  "model_sources": [],
+  "machine_shape": "NvidiaTeslaT4"
+}

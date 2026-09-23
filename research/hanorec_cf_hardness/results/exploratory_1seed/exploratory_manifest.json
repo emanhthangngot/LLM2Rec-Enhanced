@@ -1,0 +1,123 @@
+{
+  "source_manifest": {
+    "experiment_sha256": "ed8db58116d6244f9b48967fd45002be401adf9f2e494cc0ab1ed20bd8ea4c2a",
+    "generator": "scripts/build_hanorec_exploratory.py",
+    "prep_sha256": "2ef1ed889ccd4e0d4e2fd552d07a74a5ae05529eabf247be33f04b41abac1931",
+    "train_sha256": "d4c6034aad8ac4b7c4135a4a9425ec16c77b66b4f48d291a2a3d5f0c8f9dc9be",
+    "runtime_preprocessing_patch": "v11-qwen25vl-min28-letterbox56",
+    "runtime_script_sha256": "24e1f46787a6b4676ffd317b7fc3b3d00d266d87d14467cdb3d10a6dd2d0e986"
+  },
+  "image_preprocessing": {
+    "version": "v11-qwen25vl-min28-letterbox56",
+    "audit_path": "/kaggle/working/hanorec_exploratory_1seed/image_preprocessing_audit.json",
+    "area_resized_count": 8552,
+    "letterboxed_count": 3,
+    "failed_count": 0
+  },
+  "purpose": "exploratory_only_non_confirmatory",
+  "must_not_be_used_as_confirmation": true,
+  "exploratory_scope": {
+    "seed": 2024,
+    "train_pairs": 530,
+    "validation_users": 25,
+    "test_users": 25,
+    "epochs": 1,
+    "batch_size": 3,
+    "max_pixels": 4096,
+    "weights": [
+      1.0,
+      0.0,
+      0.5
+    ],
+    "image_conditions": [
+      "real",
+      "shuffle"
+    ]
+  },
+  "limitations": [
+    "Single seed; no cross-seed inference.",
+    "One epoch; reduced eval population (25/25 users).",
+    "Batch 3 at max_pixels 4096 differs from the frozen batch 4 / max_pixels 262144 recipe.",
+    "max_pixels reduced from 8192 to 4096 after v1 CUDA OOM in the w1.0/real DPO arm at optimizer update 62/89 (torch.OutOfMemoryError, 14.55/14.56 GiB reserved); the v17 smoke probe measured only a single forward+backward pass on a fixed 3-pair sample and did not capture worst-case real-catalog image sizes.",
+    "Cannot support the planned confirmatory or cross-seed claim."
+  ],
+  "status": "COMPLETE",
+  "sft_bundles": {
+    "real": "COMPLETE",
+    "shuffle": "COMPLETE"
+  },
+  "arms": [
+    {
+      "weight": 1.0,
+      "image_condition": "real",
+      "status": "COMPLETE",
+      "optimizer_updates": 177,
+      "expected_optimizer_updates": 177,
+      "mean_ndcg@10": 0.0,
+      "mean_recall@10": 0.0,
+      "checkpoint": "arm_w1.0_real.pt",
+      "checkpoint_reloaded": true,
+      "parent_sft_sha256": "8a16184794409ac4b75b1d46651909c798e1b5df3394cecc102682d0bc9a6b4d"
+    },
+    {
+      "weight": 1.0,
+      "image_condition": "shuffle",
+      "status": "COMPLETE",
+      "optimizer_updates": 177,
+      "expected_optimizer_updates": 177,
+      "mean_ndcg@10": 0.01261859507142915,
+      "mean_recall@10": 0.04,
+      "checkpoint": "arm_w1.0_shuffle.pt",
+      "checkpoint_reloaded": true,
+      "parent_sft_sha256": "f929f861d1ccfa4b43a57977c92bbd7a8cda456a079cc1cac27be9832aa30d95"
+    },
+    {
+      "weight": 0.0,
+      "image_condition": "real",
+      "status": "COMPLETE",
+      "optimizer_updates": 177,
+      "expected_optimizer_updates": 177,
+      "mean_ndcg@10": 0.0,
+      "mean_recall@10": 0.0,
+      "checkpoint": "arm_w0.0_real.pt",
+      "checkpoint_reloaded": true,
+      "parent_sft_sha256": "8a16184794409ac4b75b1d46651909c798e1b5df3394cecc102682d0bc9a6b4d"
+    },
+    {
+      "weight": 0.0,
+      "image_condition": "shuffle",
+      "status": "COMPLETE",
+      "optimizer_updates": 177,
+      "expected_optimizer_updates": 177,
+      "mean_ndcg@10": 0.0,
+      "mean_recall@10": 0.0,
+      "checkpoint": "arm_w0.0_shuffle.pt",
+      "checkpoint_reloaded": true,
+      "parent_sft_sha256": "f929f861d1ccfa4b43a57977c92bbd7a8cda456a079cc1cac27be9832aa30d95"
+    },
+    {
+      "weight": 0.5,
+      "image_condition": "real",
+      "status": "COMPLETE",
+      "optimizer_updates": 177,
+      "expected_optimizer_updates": 177,
+      "mean_ndcg@10": 0.0,
+      "mean_recall@10": 0.0,
+      "checkpoint": "arm_w0.5_real.pt",
+      "checkpoint_reloaded": true,
+      "parent_sft_sha256": "8a16184794409ac4b75b1d46651909c798e1b5df3394cecc102682d0bc9a6b4d"
+    },
+    {
+      "weight": 0.5,
+      "image_condition": "shuffle",
+      "status": "COMPLETE",
+      "optimizer_updates": 177,
+      "expected_optimizer_updates": 177,
+      "mean_ndcg@10": 0.0,
+      "mean_recall@10": 0.0,
+      "checkpoint": "arm_w0.5_shuffle.pt",
+      "checkpoint_reloaded": true,
+      "parent_sft_sha256": "f929f861d1ccfa4b43a57977c92bbd7a8cda456a079cc1cac27be9832aa30d95"
+    }
+  ]
+}

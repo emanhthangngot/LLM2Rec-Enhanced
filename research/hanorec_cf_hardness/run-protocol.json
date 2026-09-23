@@ -1,0 +1,45 @@
+{
+  "protocol_version": 1,
+  "plan": "260920-1245-hanorec-faithful-signal-recheck",
+  "task": {
+    "domain": "Games adaptation of HaNoRec hit-1 binary preference",
+    "native_score_claim": false,
+    "primary_metrics": ["NDCG@10", "Recall@10"],
+    "primary_contrasts": ["w=0.0 minus w=1.0", "w=0.5 minus w=1.0"],
+    "meaningful_ndcg_delta": 0.002,
+    "confirmation_split": "test",
+    "development_split": "validation",
+    "candidate_source": "frozen SASRec top-M candidates; target never inserted",
+    "scoring": "sequence-summed Yes/No response log-probability margin"
+  },
+  "source_authority": {
+    "hanorec": {
+      "repository": "https://github.com/wangyu0627/HaNoRec",
+      "commit": "587face74524e4553b5a7aa295fe962004682382",
+      "archive_sha256": "48c52e5625cd4e25e80600fed9bed8aad8906556d267b87d52890b49bf33d6a6",
+      "paths": ["configs/hanorec/microlens_hit1.yaml", "hanorec/trainer/dpo.py", "hanorec/hars/math.py", "hanorec/hars/hardness.py", "hanorec/nodo/hooks.py"]
+    },
+    "llamafactory": {
+      "requirement": "llamafactory==0.9.3.dev0",
+      "source_revision": null,
+      "note": "The pinned HaNoRec requirement exposes a package version but no source commit. The corrected Games runner ports and tests the observable HaNoRec trainer contract; it does not claim byte-identical LLaMA-Factory internals."
+    },
+    "llm2rec": {
+      "repository": "https://github.com/HappyPointer/LLM2Rec",
+      "commit": "73b481f710f67166ab958f4985d27b27fb410871",
+      "archive_sha256": "6bcee7b09ec9ad5fa0107a083c7b8060abbead23e1264a49480906de638c1cc8"
+    }
+  },
+  "recipe": {
+    "model": "Qwen/Qwen2.5-VL-3B-Instruct",
+    "model_revision": "66285546d2b821cf421d4f5eb2576359d3770cd3",
+    "sft": {"adapter": "task-specific LoRA adapter", "batch_size": 4, "gradient_accumulation_steps": 8, "epochs": 5.0, "scheduler": "cosine", "warmup_steps": 0, "max_grad_norm": 1.0, "precision": "bf16", "lora_rank": 8, "lora_alpha": 32, "lora_dropout": 0.05, "target_modules": "all"},
+    "dpo": {"fresh_adapter": true, "reference": "frozen post-SFT adapter, no DPO adapter", "batch_size": 4, "gradient_accumulation_steps": 8, "epochs": 5.0, "scheduler": "cosine", "warmup_steps": 0, "max_grad_norm": 1.0, "beta0": 0.1, "loss": "sigmoid", "noise_sigma": 0.05, "beta_floor": 1.0e-6, "drop_last": true}
+  },
+  "seeds": [2024, 2025, 2026],
+  "weights": [1.0, 0.0, 0.5],
+  "controls": {"image_conditions": ["real", "shuffle"], "shuffle": "fixed-point-free frequency-stratified item bijection built from training rows only", "constant_hardness": "validation-only mean-matched diagnostic; not a primary test arm"},
+  "smoke": {"purpose": "correctness and measured resource smoke only", "train_pairs": 8, "validation_users": 4, "test_users": 4, "epochs": 1, "max_optimizer_updates": 2, "must_not_be_used_as_signal": true},
+  "invariants": ["training pair and hardness hashes do not change when held-out targets/candidates/images change", "negative is not target, observed history, or train-known future item", "shuffle is a bijection and has no fixed points", "global responsiveness batch has at least three examples", "only the fresh DPO adapter changes during DPO", "SFT-only reference is invariant to DPO updates and NoDO noise", "partial or missing stages cannot be labelled COMPLETE", "source/config/data/parent hashes are persisted and checked"],
+  "statistics": {"bootstrap_resamples": 20000, "bootstrap_seed": 20260920, "holm_primary_contrasts": 2, "training_seed_uncertainty": "report individual seeds and spread; bootstrap is conditional on fitted seed models"}
+}

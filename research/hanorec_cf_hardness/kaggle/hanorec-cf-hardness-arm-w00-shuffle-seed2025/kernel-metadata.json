@@ -1,0 +1,19 @@
+{
+  "id": "trlxun/hanorec-cf-hardness-arm-w00-shuffle-seed2025",
+  "title": "hanorec-cf-hardness-arm-w00-shuffle-seed2025",
+  "code_file": "runner.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_tpu": false,
+  "enable_internet": true,
+  "keywords": [],
+  "dataset_sources": [],
+  "kernel_sources": [
+    "trlxun/hanorec-cf-hardness-sft-seed2025"
+  ],
+  "competition_sources": [],
+  "model_sources": [],
+  "machine_shape": "NvidiaTeslaT4"
+}

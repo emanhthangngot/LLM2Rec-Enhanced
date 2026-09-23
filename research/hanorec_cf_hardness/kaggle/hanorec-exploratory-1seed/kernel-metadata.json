@@ -1,0 +1,29 @@
+{
+  "id": "trlxun/hanorec-exploratory-1seed",
+  "title": "hanorec-exploratory-1seed",
+  "code_file": "runner.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_tpu": false,
+  "enable_internet": true,
+  "keywords": [],
+  "dataset_sources": [
+    "trixuanle/llm2rec-games-5core",
+    "trixuanle/llm2rec-amazonmix6-5core"
+  ],
+  "kernel_sources": [
+    "trixuanle/llm2rec-budgeted-games-sasrec-evaluation",
+    "trixuanle/llm2rec-g1-preflight-and-visual-screen"
+  ],
+  "competition_sources": [],
+  "model_sources": [],
+  "machine_shape": "NvidiaL4",
+  "source_manifest": {
+    "prep_sha256": "2ef1ed889ccd4e0d4e2fd552d07a74a5ae05529eabf247be33f04b41abac1931",
+    "train_sha256": "d4c6034aad8ac4b7c4135a4a9425ec16c77b66b4f48d291a2a3d5f0c8f9dc9be",
+    "experiment_sha256": "ed8db58116d6244f9b48967fd45002be401adf9f2e494cc0ab1ed20bd8ea4c2a",
+    "generator": "scripts/build_hanorec_exploratory.py"
+  }
+}

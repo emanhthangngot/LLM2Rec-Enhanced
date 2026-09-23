@@ -1,0 +1,23 @@
+{
+  "id": "trlxun/hanorec-cf-hardness-real-run",
+  "title": "hanorec-cf-hardness-real-run",
+  "code_file": "runner.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_tpu": false,
+  "enable_internet": true,
+  "keywords": [],
+  "dataset_sources": [
+    "trixuanle/llm2rec-games-5core",
+    "trixuanle/llm2rec-amazonmix6-5core"
+  ],
+  "kernel_sources": [
+    "trixuanle/llm2rec-budgeted-games-sasrec-evaluation",
+    "trixuanle/llm2rec-g1-preflight-and-visual-screen"
+  ],
+  "competition_sources": [],
+  "model_sources": [],
+  "machine_shape": "NvidiaTeslaT4"
+}

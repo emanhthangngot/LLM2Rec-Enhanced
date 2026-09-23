@@ -1,0 +1,23 @@
+{
+  "id": "trixuanle/hanorec-cf-hardness-preflight-a2",
+  "title": "hanorec-cf-hardness-preflight-a2",
+  "code_file": "runner.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": false,
+  "enable_gpu": false,
+  "enable_tpu": false,
+  "enable_internet": true,
+  "keywords": [],
+  "dataset_sources": [
+    "trixuanle/llm2rec-amazonmix6-5core"
+  ],
+  "kernel_sources": [
+    "trixuanle/llm2rec-budgeted-iem-disk-retry",
+    "trixuanle/llm2rec-g1-preflight-and-visual-screen",
+    "trixuanle/llm2rec-budgeted-games-sasrec-evaluation"
+  ],
+  "competition_sources": [],
+  "model_sources": [],
+  "machine_shape": "NvidiaTeslaT4"
+}
