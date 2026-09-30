@@ -1,5 +1,15 @@
 # LLM2Rec caption-augmentation experiment package
 
+> **Status: CLOSED (2026-09-30) — negative result.**
+>
+> - Video_Games paired pilot: Recall@10 −6.5% vs `title-only`.
+> - Zero-GPU domain screening: `PROXY_INVALID`.
+> - Late fusion: −9.5%, `FAIL`.
+>
+> The package is kept for reproduction only; no further runs are planned. See
+> `docs/reports/v10-video-games-paired-pilot.md` and
+> `docs/reports/v10-caption-screening.md`.
+
 Implementation package for
 `plans/260928-0043-qwen3vl-v10-caption-retraining/plan.md`. It defines the
 Qwen3-VL caption replacement and registers the full LLM2Rec matrix;
@@ -150,9 +160,9 @@ the network, or require a GPU. The generated Qwen3-VL caption kernel is
 GPU-only; its Transformers runtime is isolated from downstream LLM2Rec
 training.
 
-## Current execution boundary
+## Execution boundary (final)
 
 The local preflight validates all 10 registered profiles across chain seeds
-2024/2025/2026. The full AmazonMix-6 matrix is still not executed. The only
-Qwen3-VL training run completed so far is the Video_Games paired pilot
-above.
+2024/2025/2026, but the full AmazonMix-6 matrix was never executed. The
+direction was closed after the Video_Games paired pilot, the zero-GPU
+screening, and the late-fusion run described above.

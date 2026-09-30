@@ -1,6 +1,6 @@
 # Hướng v10 — Sàng lọc caption theo domain, không tốn GPU (hướng A)
 
-> Trạng thái: **đã đo; theo quy tắc đăng ký trước, kết quả là `PROXY_INVALID`**. Không domain nào được chọn để chạy paired GPU.
+> Trạng thái: **ĐÃ ĐÓNG (2026-09-30), kết quả âm.** Sàng lọc theo domain cho `PROXY_INVALID`; thử ghép muộn (mục 7) cho `FAIL`. Hướng caption v10 dừng tại đây.
 > Giao thức và quy tắc quyết định được ghi **trước** khi tính số của các domain khác Video_Games: `research/caption_augmentation/screening/protocol.md`.
 
 ## 1. Câu hỏi

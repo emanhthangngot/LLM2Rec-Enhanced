@@ -1,8 +1,10 @@
 # Hướng v10 — Caption Augmentation cho LLM2Rec: giới thiệu phương pháp và kết quả hiện tại
 
 > Tài liệu giới thiệu cho giáo viên hướng dẫn. Số liệu metric là giá trị tuyệt đối; riêng bảng chênh lệch 3.2 ghi thêm % tương đối trong ngoặc. Tất cả lấy trực tiếp từ artifact Kaggle đã tải về hoặc từ báo cáo đã audit; nguồn ghi ở cuối mỗi bảng.
-> Trạng thái: **đang chạy, chưa có kết luận khoa học**. Mới có arm `real`, với **1 chain huấn luyện** (chạy 2 lần: v8 và v9); các arm đối chứng chưa chạy.
-> Cập nhật 2026-09-30: pilot paired `title-only` so với `real` (caption Qwen3-VL) trên Video_Games đã chạy xong, cho kết quả âm (Recall@10 −6.5%) — xem `docs/reports/v10-video-games-paired-pilot.md`.
+> Trạng thái: **ĐÃ ĐÓNG (2026-09-30), kết quả âm.** Các số v8/v9 bên dưới là lịch sử, và đã được thay thế bởi các thí nghiệm có đối chứng dùng caption Qwen3-VL:
+> - pilot paired trên Video_Games: Recall@10 −6.5% (`docs/reports/v10-video-games-paired-pilot.md`);
+> - sàng lọc 6 domain: `PROXY_INVALID`;
+> - ghép muộn: −9.5%, `FAIL` (`docs/reports/v10-caption-screening.md`).
 
 ---
 

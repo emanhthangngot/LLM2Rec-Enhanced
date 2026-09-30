@@ -16,7 +16,7 @@
 
 **LLM2Rec-Research** takes the vanilla LLM2Rec pipeline — CSFT → MNTP → SimCSE → item-embedding table → sequential recommender — and asks one question repeatedly, at a different intervention point each generation: *does adding non-text evidence (image content, or collaborative "hardness") improve recommendation, once every non-causal explanation is controlled for?*
 
-The upstream paper text-conditions a small LLM (`Qwen2-0.5B`) into an item-embedding generator using only item titles. Nine generations of extension work, `v0` through `v11`, are tracked below as one lineage, exactly as they were designed, tested, and — for six of them — **rejected with a documented reason**. Two generations, `v10` and `v11`, are currently running and have **no concluded result yet**; this README states that explicitly rather than presenting partial numbers as findings, per the evidence discipline this fork was built under (`AGENTS.md` in the parent workspace: "No fabricated citations. If a claim lacks a source, write `(unsourced)`.").
+The upstream paper text-conditions a small LLM (`Qwen2-0.5B`) into an item-embedding generator using only item titles. Nine generations of extension work, `v0` through `v11`, are tracked below as one lineage, exactly as they were designed, tested, and — for seven of them — **rejected or closed with a documented reason**. `v10` is closed with a controlled negative result. `v11` is blocked and has **no concluded result yet**. This README states that explicitly rather than presenting partial numbers as findings, per the evidence discipline this fork was built under (`AGENTS.md` in the parent workspace: "No fabricated citations. If a claim lacks a source, write `(unsourced)`.").
 
 Two structural lessons carry across every generation:
 
@@ -33,7 +33,7 @@ Two structural lessons carry across every generation:
 | **v9.0** | `Additive-Item-Fusion` | CLIP image feature → MLP → summed directly into the item embedding | **Rejected** | Games | SASRec |
 | **v9.1** | `Sequence-Side-Fusion` (S1/S2) | Visual signal folded into the user-sequence hidden state | **Rejected** | Games | SASRec |
 | **v9.2** | `Frozen-Score-Residual` | `score_final = score_text + α·z_visual` at the ranking boundary; text recommender and candidate table stay frozen | **Closed — conditional positive, program exhausted (`STOP2`)** | Games (dev), Sports (transfer) | SASRec, BERT4Rec |
-| **v10** *(active)* | `Caption-Augmentation` | Florence‑2 offline image→text captions added to item text via 5 controlled arms (`title-only`/`null`/`real`/`shuffle`/`paraphrase`) | **Paused for fixes — corpus complete (108,753 items, 108,226 captioned); `real` arm ran twice on one seed-42 chain (v8, v9) and only in the CSFT history (`csft-only` in practice); manual check shows captions mostly restate the title; Qwen3-VL caption pilot prepared** | Games (dev), Arts (replication), AmazonMix-6 (pretrain); Baby reserved sealed | SASRec (matched) |
+| **v10** | `Caption-Augmentation` | VLM image→text captions (Florence‑2, then Qwen3‑VL‑4B) added to item text, tested against matched `title-only` and `shuffle` controls | **Closed — negative (2026-09-30).** Video_Games paired pilot: Recall@10 −6.5% vs `title-only`. Zero-GPU domain screening: `PROXY_INVALID`. Late fusion `[e_title ; e_caption]`: −9.5%, `FAIL`. | Games (dev); screening over all six AmazonMix-6 domains | SASRec (matched) |
 | **v11** *(active)* | `HaNoRec-CF-Hardness` | Freeze LLM2Rec + SASRec; blend a CF score margin with HaNoRec's semantic hardness (`λ = λ_sem^w · λ_cf^(1−w)`, `w ∈ {1.0, 0.5, 0.0}`) to weight a DPO-tuned Qwen2.5‑VL reranker over SASRec's real top‑20 | **Blocked — first-implementation 265-user run withdrawn (leakage, unmatched shuffle); corrected implementation's exploratory 1-seed run shows no signal above SASRec order; frozen 3-seed matrix does not fit the GPU budget (`BLOCKED_NO_FIT`)** | Games only | Qwen2.5-VL reranker over SASRec |
 
 Results and rejection reasons are pulled out into their own tables below (`Results vs. Baseline` and `Why Rejected / Limited`) instead of being packed into this overview.
@@ -114,7 +114,7 @@ flowchart TB
 
 The `alpha = 0` parity check (`J` → `K`) is the invariant that makes this design auditable: every sub-experiment in the `v9.2` family (`I1-A`, patched rerun, joint-trained, `R1` controls, exposure-gated, `C0.5`) reuses this exact diagram and only changes how `z_visual` or `alpha` is fit.
 
-### v10 — Caption augmentation (active)
+### v10 — Caption augmentation (closed, negative)
 
 ```mermaid
 flowchart TB
@@ -138,7 +138,7 @@ flowchart TB
     N --> O["Paired-seed uncertainty audit: real vs each control"]
 ```
 
-The five arms in `Arms` are five causal contrasts sharing one pipeline, not five different pipelines: `real` vs `shuffle` isolates whether the image is linked to the *correct* item; `real` vs `paraphrase` isolates whether the gain is "more text" rather than "visual evidence."
+The five arms in `Arms` are five causal contrasts sharing one pipeline, not five different pipelines: `real` vs `shuffle` isolates whether the image is linked to the *correct* item; `real` vs `paraphrase` isolates whether the gain is "more text" rather than "visual evidence." The full five-arm AmazonMix-6 matrix was never run. The direction was closed after three single-domain tests; see `Why Rejected / Limited`.
 
 ### v11 — HaNoRec CF/history-aware hardness (active)
 
@@ -187,7 +187,7 @@ Every generation in this lineage is evaluated on a subset of five Amazon-review 
 Backbone choice follows the same anti-cherry-picking logic on a second axis: `SASRec` is the primary backbone, `BERT4Rec` is a second, competitively-gated backbone used to confirm a result isn't SASRec-specific, and `GRU4Rec` is kept deliberately as a **stress test with a near-degenerate text baseline** (`0.00053`–`0.00070` NDCG@10) — its huge relative "gains" are reported and then explicitly discounted, rather than dropped from the record.
 
 **Where `v10` and `v11` currently sit on this map:**
-- `v10` (caption augmentation) follows the full discipline: Games for development, Arts for in-domain replication, AmazonMix-6 for pretraining everywhere, and Baby reserved untouched for a later, separate confirmation run.
+- `v10` (caption augmentation) is closed. Its concluding tests ran on Games only (paired pilot and late fusion). The zero-GPU screening covered all six AmazonMix-6 domains. Baby was never touched.
 - `v11` (HaNoRec CF-hardness) currently runs on **Games only**, because it depends on the frozen, already-audited LLM2Rec+SASRec checkpoint pair that only exists for that dataset. Extending it to Arts/Sports/Baby is explicit future work, not yet started — stated here rather than implied.
 
 ---
@@ -253,7 +253,7 @@ Two further findings limit what v8/v9 can show at all:
 - **Captions reach only the CSFT history.** MNTP/SimCSE train on plain `item_titles.txt`, and extraction uses plain `item_titles.json`, so the executed run is the `csft-only` profile.
 - **The caption text carries little new information.** A manual check of 100 items found 69 captions restating the title and 14 adding information, mostly colour. The check also found literal `<pad>` in 61.3% of `real` arm texts and paraphrases identical to the title in 59.1% of items.
 
-Full numbers are in `docs/reports/v10-caption-augmentation.md`; the manual check and the Qwen3-VL captioner plan are in `docs/reports/v10-caption-augmentation-design.md`.
+Full numbers are in `docs/reports/v10-caption-augmentation.md`; the manual check and the Qwen3-VL captioner plan are in `docs/reports/v10-caption-augmentation-design.md`. **Final status (2026-09-30):** the v8/v9 rows above are superseded by the matched Qwen3-VL tests. The direction is closed as negative; see the `v10` row in `Why Rejected / Limited`.
 
 **`v11` status, stated plainly:** an earlier version of this README presented the three `v11` rows above as real single-seed evidence. That is retracted for two reasons.
 
@@ -272,6 +272,7 @@ Rejection and limitation reasons for every generation that did **not** end up in
 | `v9.1` sequence-side fusion (S1/S2) | **Rejected** | `92%` of the apparent gain traced to `740` immediate-repeat rows; a recency-only reranker with **zero image input** beats it on the same slice on all 3 seeds — the fused state learned to copy the last interacted item, not visual semantics |
 | `v9.2` frozen score-residual — Sports transfer | Limitation | CSFT/IEM were never tuned on the Sports domain; the frozen visual profile and score-boundary calibration learned on Games don't carry over — real visual barely edges out a matched shuffle (`+0.000016` mean NDCG@10) and loses to plain text |
 | `v9.2` frozen score-residual — GRU4Rec backbone | Limitation | GRU4Rec's own text-only baseline is near-degenerate (`~0.0007` NDCG@10), so a large relative visual gain there fills near-empty signal rather than proving visual content matters; a text-PCA control (`0.01665`) beats real visual outright on this backbone |
+| `v10` caption augmentation (Qwen3-VL, Games) | **Closed — negative** | Paired pilot (1 LLM chain per arm × 3 SASRec seeds): `real` Recall@10 `0.0783` vs `title-only` `0.0838` (−6.5%, 0/3 seeds win). The setup audit found no implementation cause: captions reach every stage and pull embeddings toward visual attributes. Zero-GPU screening over six domains returns `PROXY_INVALID`: the proxy ranks Games first, yet Games showed no training gain. Late fusion `[e_title ; e_caption]` into the SASRec adapter: `0.0759` vs `0.0838` (−9.5%); it beats shuffle in only 2/3 seeds, so `FAIL`. Captions do separate the next item where the title embedding fails (AUC `0.554`), but no tested integration turned that into a ranking gain. Reports: `docs/reports/v10-video-games-paired-pilot.md`, `docs/reports/v10-caption-screening.md` |
 | `v11` HaNoRec exploratory 1-seed run (corrected implementation, 25/25 users) | Exploratory — `NO_SIGNAL_ABOVE_RETRIEVER` | Only 6/25 validation users and 1/25 test users have the target in SASRec's top-20. That explains the test `NDCG@10 ≈ 0` and `candidate_recall@20 = 0.04`. On informative users every arm is below the SASRec order, and the reranker order is weakly anti-correlated with it (mean Spearman −0.02 to −0.12). Open protocol issues: `lambda_cf` spans 0.00095–24.8 (unclamped by design), and max_pixels 4096 leaves ~64×64 images. This run is *newer* than the withdrawn 265-user run, not superseded by it |
 
 The `v9.2` Sports-transfer and GRU4Rec rows are why it is reported as **Games-conditional**, not a general method, despite passing `C0.5` on that one dataset. The `v11` row is exploratory and non-confirmatory, and so far it is negative against the retriever itself.
@@ -289,7 +290,7 @@ LLM2Rec-Research/
 ├── llm2rec/                            # Upstream package: CSFT/MNTP/SimCSE configs and entry points
 ├── seqrec/                             # Upstream downstream sequential-recommender evaluators
 ├── baselines/                          # Upstream baseline recommenders
-├── research/                           # This fork's own code: v0 baseline repro, v9 multimodal program, active v10/v11
+├── research/                           # This fork's own code: v0 baseline repro, v9 multimodal program, closed v10, blocked v11
 │   ├── baseline/                       # v0 — local Kaggle T4 compatibility reproduction (the source of every v0 number above)
 │   │   ├── kaggle/                     # csft_chain.py, iem_pipeline.py, evaluate_games.py, audit_games.py + kernel metadata
 │   │   ├── config/compatibility-profile.json  # Frozen deviations from the paper's full-compute profile
@@ -333,7 +334,7 @@ Before this repository was pushed, it was audited for whether every claimed resu
 | `v0` | `research/baseline/` | Yes — Kaggle kernels, compatibility-profile config, provenance, validator |
 | `v9.0` | `research/multimodal/models/interventional_visual_residual.py` | Yes |
 | `v9.2` | `research/multimodal/models/score_visual_fusion.py`, `preflight.py`, `visual_screen.py` | Yes |
-| `v10` | `research/caption_augmentation/` (module), `kaggle/` (executed kernels), `colab/` (caption pilot), `results/` (v8/v9 artifacts, manual check) | Yes |
+| `v10` | `research/caption_augmentation/` (module), `kaggle/` (executed kernels), `colab/` (caption pilot), `screening/` (zero-GPU screening + late fusion), `results/` (v8/v9, `video_games_pilot/`, `caption_screening/`) | Yes |
 | `v11` | `research/hanorec_cf_hardness/` (corrected module), `kaggle/` (all pushed kernels, including the self-contained first-implementation runners that produced `results/full_run_265/`), `results/` | Yes |
 
 `v9.1` (sequence-side fusion) has no surviving local module in this fork's own tree. It is documented only in `docs/reports/v0-v9-baseline-and-visual-fusion.md` and in `research/multimodal/README.md`'s history section; its Kaggle kernels were not part of the source directories synced into this repository. This is stated rather than papered over with a placeholder file.
@@ -343,7 +344,7 @@ Before this repository was pushed, it was audited for whether every claimed resu
 | Direction | Results / overview | Design, protocol, audits |
 | :--- | :--- | :--- |
 | `v0`–`v9.x` | `v0-v9-baseline-and-visual-fusion.md` | (same file) |
-| `v10` | `v10-caption-augmentation.md` | `v10-caption-augmentation-design.md` |
+| `v10` | `v10-caption-augmentation.md`, `v10-video-games-paired-pilot.md`, `v10-caption-screening.md` | `v10-caption-augmentation-design.md` |
 | `v11` | `v11-hanorec-cf-hardness.md` | `v11-hanorec-cf-hardness-design.md` |
 
 ---

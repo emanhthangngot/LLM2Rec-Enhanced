@@ -1,7 +1,7 @@
 # Hướng v10 — Pilot paired Video_Games: caption Qwen3-VL so với title-only
 
 > Tài liệu cho giáo viên hướng dẫn. Mọi số liệu lấy trực tiếp từ artifact Kaggle đã tải về; đường dẫn nguồn ghi ở mục 9.
-> Trạng thái: **đã chạy xong, kết luận âm trong thiết kế này**. Mỗi arm có **1 chain LLM** × 3 seed SASRec, nên đây là pilot thăm dò một domain, không phải bằng chứng cho giao thức AmazonMix-6 đầy đủ.
+> Trạng thái: **đã chạy xong, kết luận âm; hướng v10 ĐÃ ĐÓNG (2026-09-30).** Mỗi arm có **1 chain LLM** × 3 seed SASRec, nên đây là pilot thăm dò một domain, không phải bằng chứng cho giao thức AmazonMix-6 đầy đủ. Các bước tiếp theo nêu ở mục 8 đã được thử: sàng lọc domain và ghép muộn, xem `docs/reports/v10-caption-screening.md`.
 
 ---
 

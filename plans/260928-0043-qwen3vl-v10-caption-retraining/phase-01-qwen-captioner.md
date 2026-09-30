@@ -1,7 +1,7 @@
 ---
 phase: 1
 title: "Qwen Captioner Package"
-status: pending
+status: cancelled
 priority: P1
 effort: "Local package, protocol, and regression coverage"
 dependencies: []
@@ -53,3 +53,7 @@ R-01, R-03, R-04
 - The 100-row pilot labels must pass before a corpus-generation job is submitted; failure returns to prompt/model review, not item-level cherry-picking.
 - The selected structured prompt conditions captions on titles. This is an intentional protocol revision and must be disclosed in all reports and model claims.
 - New Qwen identity and kernel slug are mandatory because the existing kernel self-mounts its prior Florence checkpoints.
+
+## Closure (2026-09-30)
+
+Cancelled: the v10 caption direction was closed as negative before the full matrix ran. Evidence: `docs/reports/v10-video-games-paired-pilot.md` and `docs/reports/v10-caption-screening.md`.
