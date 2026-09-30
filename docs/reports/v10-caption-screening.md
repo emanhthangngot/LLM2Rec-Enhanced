@@ -70,3 +70,30 @@ Trên Video_Games, lấy các cặp test và so với hai embedding đã train c
 - Ở 5 domain, Florence caption ngắn hơn và khác phong cách Qwen3-VL. Chỉ Games có Qwen3-VL (M: 0.519 với Florence so với 0.580 với Qwen3-VL).
 - M_cf là amendment đăng ký sau khi calibrate Games, nên chỉ mang tính thăm dò.
 - Chênh lệch giữa các domain rất nhỏ (≤ 0.016 AUC); CI hẹp chủ yếu nhờ số cặp rất lớn.
+
+## 7. Thử ghép muộn (late fusion) — amendment 2 và 3
+
+**Bước 1, không tốn GPU (amendment 2, đạt).** Trên các cặp test của Games, điểm `cos(e_title) + λ·(độ giống caption)` cho AUC 0.640, so với 0.608 của riêng title: +0.032, CI [0.027, 0.036]. Caption bị xáo chỉ thêm +0.0005. λ = 2.0 được chọn trên tập valid và nằm đúng mép lưới. Kết quả: `results/caption_screening/fusion_headroom.json`.
+
+**Bước 2, GPU (amendment 3, FAIL).**
+- Kernel `trlxun/llm2rec-vg-late-fusion-v1` chạy trên account thứ hai, dùng dataset private `trlxun/llm2rec-vg-late-fusion-inputs-v1`; mọi input đều được pin SHA.
+- GPU Tesla T4, 3,307 s ≈ 0.92 GPU-h. Tính cả lần này, toàn dự án đã dùng khoảng 31.7 GPU-h trên hai account.
+- Ma trận đặc trưng cố định:
+  - `[e_title ; s·e_caption]`, trong đó `e_caption` là TF-IDF của phần caption khác title, giảm về 256 chiều bằng SVD không giám sát, và `s` bằng norm trung bình của `e_title`.
+  - Đặc trưng được đưa vào adapter tuyến tính sẵn có của SASRec.
+
+| Arm | Recall@10 (2024 / 2025 / 2026) | Recall@10 TB | NDCG@10 TB |
+|---|---|---|---|
+| `title` (tái lập pilot, lệch 0.0) | 0.0837 / 0.0829 / 0.0846 | 0.0838 | 0.0499 |
+| `fused_real` | 0.0832 / 0.0739 / 0.0705 | 0.0759 | 0.0433 |
+| `fused_shuffle` | 0.0679 / 0.0666 / 0.0734 | 0.0693 | 0.0394 |
+
+Kết luận theo quy tắc: real thắng shuffle ở 2/3 seed (yêu cầu 3/3), và real chỉ đạt 0.905 lần baseline (yêu cầu ≥ 1.02). Verdict: **FAIL**.
+
+**Đọc kết quả.**
+- Thêm một khối 256 chiều vào đầu vào adapter làm SASRec kém đi, kể cả khi khối đó là nhiễu: shuffle giảm 17%.
+- Caption thật lấy lại được một phần so với nhiễu (+0.0066 Recall@10 trung bình), nhưng vẫn thấp hơn baseline 9.5%.
+- Như vậy tín hiệu thấy ở bước 1 **không chuyển thành lợi ích** khi dùng cách ghép này.
+- Sai lệch so với thiết kế ban đầu: tôi dùng adapter tuyến tính sẵn có để không phải sửa code LLM2Rec, nên cổng `g` **không** được khởi tạo bằng 0. Ngay từ đầu, khối caption đã có cùng độ lớn với khối title. *(Suy luận: đây có thể là nguyên nhân chính làm shuffle tụt 17%.)*
+
+Kết quả: `results/caption_screening/late_fusion_v1/late_fusion_artifact.json`.

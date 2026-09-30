@@ -96,3 +96,55 @@ basis.
 
 The pre-registered decision on M is still computed and reported unchanged; M_cf
 is reported next to it.
+
+## Amendment 2 — late-fusion headroom check (zero GPU), registered 2026-09-30 before running
+
+**Question.** On Video_Games, does adding the caption channel to the trained
+title-only embedding improve next-item discrimination?
+
+- **Scores.** `s = cos(e_title(a), e_title(x)) + λ · s_cap(a, x)`.
+  `e_title` is the pilot title-only embedding. `s_cap` is the title-residual
+  Qwen3-VL caption similarity defined above.
+- **Triples.** Positives are the unique valid-split and test-split pairs, with
+  negatives matched as above. Popularity is computed from train.
+- **Tuning.** λ is chosen on **valid** from {0, 0.05, 0.1, 0.2, 0.3, 0.5, 1, 2}.
+  It is reported, never tuned, on test.
+- **Control.** The same procedure is repeated with the shuffled (derangement)
+  caption, and λ is chosen on valid again.
+- **Pass (GPU late-fusion run allowed).** Both conditions must hold on test:
+  - the gain `AUC(fused) − AUC(title)` is ≥ 0.005, and its 95% bootstrap CI
+    (1,000 resamples of positives) excludes 0;
+  - the gain for real captions minus the gain for shuffled captions has a
+    95% CI that excludes 0.
+
+  Otherwise no GPU run is made.
+
+## Amendment 3 — GPU late-fusion run, registered 2026-09-30 before pushing
+
+Amendment 2 passed: on test, the fused score gained +0.032 AUC, CI [0.027, 0.036];
+the shuffled caption gained +0.0005.
+
+**Setup.** All arms use the pinned LLM2Rec SASRec with `SASREC_ARGS` and seeds
+2024/2025/2026, on the Video_Games test split. The frozen item-feature matrix
+is the only difference between arms:
+
+- `title`: the pilot title-only embedding, unchanged. It must reproduce the
+  pilot result: Recall@10 within 0.002 of the pilot value for every seed.
+  Otherwise the run is invalid.
+- `fused_real`: `[e_title ; s · e_cap]`.
+  - `e_cap` is the L2-normalized IDF-weighted bag of an item's Qwen3-VL caption
+    tokens, after removing template tokens and the item's own title tokens.
+    It is reduced to 256 dimensions by an unsupervised SVD fitted on item
+    features only; the SVD uses no interactions.
+  - Items without a usable caption get a zero vector.
+  - `s` is the mean row norm of `e_title`.
+- `fused_shuffle`: identical, except that `e_cap` rows are permuted by the
+  seed-20260930 derangement over the 9,517 items.
+
+**Pass** requires both of the following:
+
+- `fused_real` beats `fused_shuffle` on Recall@10 in 3/3 seeds, and
+- the mean Recall@10 of `fused_real` is ≥ 1.02 × the mean Recall@10 of `title`.
+
+NDCG@10 is reported alongside. A pass supports "late fusion recovers caption
+signal". It does not claim that the result generalizes to other domains.
