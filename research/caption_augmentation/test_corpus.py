@@ -20,6 +20,7 @@ from corpus import (
     frequency_bin_derangement,
     fuse_text,
     load_shard_records,
+    matched_cue_maps,
     normalize_whitespace,
     shard_records,
     truncate_to_token_cap,
@@ -139,6 +140,28 @@ class BuildArmsTests(unittest.TestCase):
     def _rows(self):
         titles = {"1": "Alpha Widget", "2": "Beta Widget", "3": "Gamma Widget"}
         return build_catalog_rows(titles)
+
+    def test_matched_cue_maps_excludes_mismatch_and_failed_paraphrase(self) -> None:
+        records = [
+            {
+                "global_id": 1, "caption_status": "mismatch",
+                "caption_raw": "MISMATCH", "paraphrase_status": "ok",
+                "paraphrase_text": "wrong kind of product",
+            },
+            {
+                "global_id": 2, "caption_status": "ok",
+                "caption_raw": "red glass bottle", "paraphrase_status": "error",
+                "paraphrase_text": "",
+            },
+            {
+                "global_id": 3, "caption_status": "ok",
+                "caption_raw": "blue ceramic cup", "paraphrase_status": "ok",
+                "paraphrase_text": "ceramic cup in blue",
+            },
+        ]
+        real_cues, paraphrase_cues = matched_cue_maps(records)
+        self.assertEqual(real_cues, {3: "blue ceramic cup"})
+        self.assertEqual(paraphrase_cues, {3: "ceramic cup in blue"})
 
     def test_five_arms_identical_length_and_order(self) -> None:
         rows = self._rows()

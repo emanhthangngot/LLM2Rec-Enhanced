@@ -1,0 +1,19 @@
+{
+  "item_texts_sha256": "483398535061aabe6b4b91135c627de0846e68e281722b3ebcaf23e4512fa94f",
+  "real_texts_with_cue": 8898,
+  "render_stats": {
+    "csv_items_mapped_by_asin_or_unique_title": 9517,
+    "train": {
+      "history_items": 581106,
+      "history_items_dropped": 0,
+      "rows": 122577
+    },
+    "valid": {
+      "history_items": 80616,
+      "history_items_dropped": 0,
+      "rows": 15322
+    }
+  },
+  "train_csv_sha256": "87814fd96b6d593af6a26918537b4a42c26db17bcaa6a6bc824c113f3359f4ad",
+  "valid_csv_sha256": "07393a1dc5a05c967532e80589d1c94d551060cd76f776314bd314c3499214a2"
+}

@@ -1,9 +1,7 @@
-"""Real generator smoke: 64 images across the six AmazonMix-6 domains.
+"""Qwen3-VL generation smoke and checkpointed full-corpus caption pipeline.
 
-Phase 2 Implementation Step 4. Real Florence-2 caption generation and real
-Qwen2.5 title-only paraphrasing on real, decoded images and real catalog
-titles — no stub backend anywhere in this module. GPU/Kaggle only; every
-heavy import stays inside `caption.py`'s lazy backends.
+Qwen3-VL structured captions and Qwen2.5 title-only paraphrases run only on
+Kaggle; model dependencies stay lazy in caption.py.
 """
 from __future__ import annotations
 
@@ -17,19 +15,21 @@ import shutil
 import time
 import urllib.request
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Sequence
 
 from caption import (
     CAPTION_MAX_NEW_TOKENS,
-    CAPTION_MODEL_REVISION,
-    CAPTION_MODEL_REVISION_FALLBACK,
+    CAPTION_BATCH_SIZE,
     PARAPHRASE_MAX_NEW_TOKENS,
     PARAPHRASE_MODEL_ID,
     PARAPHRASE_MODEL_REVISION,
     Captioner,
-    Florence2Captioner,
     Paraphraser,
+    Qwen3VLCaptioner,
     QwenParaphraser,
+    file_sha256,
+    prompt_sha256,
+    text_sha256,
 )
 from corpus import (
     CatalogRow,
@@ -37,6 +37,7 @@ from corpus import (
     compute_training_frequencies,
     frequency_bin_derangement,
     load_shard_records,
+    matched_cue_maps,
     write_sharded_records,
 )
 from crosswalk import CATALOG_SIZE, catalog_blocks, read_item_asin_pairs
@@ -73,6 +74,17 @@ def select_smoke_sample(total: int = SAMPLE_TOTAL) -> list[tuple[str, int]]:
         for global_id in _evenly_spaced_positions(block.start, block.size, count):
             sample.append((block.domain, global_id))
     return sample
+
+
+def select_video_games_smoke_sample(total: int = SAMPLE_TOTAL) -> list[tuple[str, int]]:
+    """Choose deterministic, evenly spaced items from the Video_Games block only."""
+    block = next(block for block in catalog_blocks() if block.domain == "Video_Games")
+    if total <= 0 or total > block.size:
+        raise ValueError(f"total must be between 1 and {block.size}, got {total}")
+    return [
+        (block.domain, global_id)
+        for global_id in _evenly_spaced_positions(block.start, block.size, total)
+    ]
 
 
 def select_quality_review_sample(per_domain: int = 50) -> list[tuple[str, int]]:
@@ -260,21 +272,12 @@ def run_generation_pass(
     download_seconds = time.perf_counter() - t_download_start
 
     caption_items = [
-        (record["global_id"], Path(str(record["image_path"])))
+        (record["global_id"], str(record["title"]), Path(str(record["image_path"])))
         for record in records if record.get("image_status") == "decoded"
     ]
 
     t_caption_load_start = time.perf_counter()
-    revision_used = CAPTION_MODEL_REVISION
-    revision_fallback_triggered = False
-    revision_error: str | None = None
-    try:
-        captioner = Florence2Captioner(revision=CAPTION_MODEL_REVISION)
-    except Exception as exc:  # noqa: BLE001 - explicit, reported fallback only
-        revision_error = f"{type(exc).__name__}: {exc}"
-        revision_used = CAPTION_MODEL_REVISION_FALLBACK
-        revision_fallback_triggered = True
-        captioner = Florence2Captioner(revision=CAPTION_MODEL_REVISION_FALLBACK)
+    captioner = Qwen3VLCaptioner()
     caption_model_load_seconds = time.perf_counter() - t_caption_load_start
 
     t_caption_start = time.perf_counter()
@@ -290,7 +293,8 @@ def run_generation_pass(
         record["caption_raw"] = result.raw_text
         record["caption_generated_tokens"] = result.generated_token_count
         record["caption_hit_token_cap"] = result.generated_token_count == CAPTION_MAX_NEW_TOKENS
-
+        record["caption_title_sha256"] = text_sha256(str(record["title"]))
+        record["caption_image_sha256"] = file_sha256(Path(str(record["image_path"])))
     paraphrase_items = [
         (record["global_id"], str(record["title"]))
         for record in records if record.get("title")
@@ -313,23 +317,29 @@ def run_generation_pass(
 
     decoded_count = sum(1 for record in records if record.get("image_status") == "decoded")
     captioned_ok = sum(1 for record in records if record.get("caption_status") == "ok")
+    caption_mismatch = sum(1 for record in records if record.get("caption_status") == "mismatch")
+    caption_terminal = captioned_ok + caption_mismatch
     paraphrased_ok = sum(1 for record in records if record.get("paraphrase_status") == "ok")
     caption_cap_hits = sum(1 for record in records if record.get("caption_hit_token_cap"))
     paraphrase_cap_hits = sum(1 for record in records if record.get("paraphrase_hit_token_cap"))
 
     result: dict[str, object] = {
-        "status": "PASS" if decoded_count > 0 and captioned_ok > 0 and paraphrased_ok > 0 else "FAIL",
+        "status": "PASS" if decoded_count > 0 and caption_terminal > 0 and paraphrased_ok > 0 else "FAIL",
         "stage": stage,
         "sample_size": len(sample),
         "domains_sampled": sorted(by_domain),
         "image_coverage": decoded_count / len(sample),
         "caption_ok_rate": captioned_ok / max(decoded_count, 1),
+        "caption_mismatch_count": caption_mismatch,
+        "caption_terminal_rate": caption_terminal / max(decoded_count, 1),
         "caption_token_cap_hit_rate": caption_cap_hits / max(decoded_count, 1),
         "paraphrase_ok_rate": paraphrased_ok / max(len(paraphrase_items), 1),
         "paraphrase_token_cap_hit_rate": paraphrase_cap_hits / max(len(paraphrase_items), 1),
-        "caption_model_revision_used": revision_used,
-        "caption_model_revision_fallback_triggered": revision_fallback_triggered,
-        "caption_model_revision_primary_error": revision_error,
+        "caption_model_id": captioner.model_id,
+        "caption_model_revision": captioner.model_revision,
+        "processor_revision": captioner.processor_revision,
+        "caption_prompt_sha256": prompt_sha256(),
+        "caption_transformers_version": __import__("transformers").__version__,
         "timing_seconds": {
             "metadata_stream": metadata_seconds,
             "image_download": download_seconds,
@@ -459,16 +469,31 @@ def run_paraphrase_probe(
     return result
 
 
+def input_catalog_fingerprint(records: Sequence[dict[str, object]]) -> str:
+    """Hash stable catalog identity while allowing absent ASIN/image metadata."""
+    payload = [
+        (record["global_id"], record["domain"], record.get("asin"),
+         record["title"], record.get("image_url"))
+        for record in records
+    ]
+    return hashlib.sha256(json.dumps(
+        payload, ensure_ascii=False, separators=(",", ":"),
+    ).encode("utf-8")).hexdigest()
+
+
 def resolve_full_catalog_metadata(
     mixed_root: Path,
     temp_dir: Path = Path("/kaggle/temp"),
     progress: Callable[[str], None] = print,
+    domains: Sequence[str] | None = None,
 ) -> tuple[list[str], list[dict[str, object]]]:
     """Resolve every catalog item's ASIN/title/image URL, one domain at a
     time, with real per-domain progress. Returns the full `item_titles.txt`
     list and a per-item metadata record (`global_id`, `domain`, `title`,
     `asin`, `image_url`, `image_status`) in catalog order, ready for
-    `process_catalog_records_incrementally`.
+    `process_catalog_records_incrementally`. `domains`, when given, restricts
+    the returned records to those catalog blocks (still in catalog order) and
+    skips metadata streaming for every other domain.
 
     Split out from the old monolithic `run_full_corpus_generation` (see
     plans/260915-0955-visual-delta-fusion-pilot/ISSUES.md #23) so metadata
@@ -481,11 +506,17 @@ def resolve_full_catalog_metadata(
         titles.pop()
     if len(titles) != CATALOG_SIZE:
         raise RuntimeError(f"catalog title count {len(titles)} != {CATALOG_SIZE}")
-    all_ids = set(range(CATALOG_SIZE))
-    asin_titles = load_asin_titles(mixed_root, all_ids)
+    blocks = catalog_blocks()
+    if domains is not None:
+        unknown = set(domains) - {block.domain for block in blocks}
+        if unknown or not domains:
+            raise ValueError(f"unknown or empty domain selection: {sorted(unknown) or domains}")
+        blocks = tuple(block for block in blocks if block.domain in set(domains))
+    wanted_ids = {item_id for block in blocks for item_id in range(block.start, block.stop)}
+    asin_titles = load_asin_titles(mixed_root, wanted_ids)
     metadata_dir = temp_dir / "full_corpus_metadata"
-    records: list[dict[str, object] | None] = [None] * CATALOG_SIZE
-    for block in catalog_blocks():
+    records: list[dict[str, object]] = []
+    for block in blocks:
         t0 = time.perf_counter()
         domain_ids = range(block.start, block.stop)
         asins = {asin_titles[item_id][0] for item_id in domain_ids if item_id in asin_titles}
@@ -494,7 +525,10 @@ def resolve_full_catalog_metadata(
         resolved = 0
         for global_id in domain_ids:
             entry = asin_titles.get(global_id)
-            record: dict[str, object] = {"global_id": global_id, "domain": block.domain, "title": titles[global_id]}
+            record: dict[str, object] = {
+                "global_id": global_id, "domain": block.domain, "title": titles[global_id],
+                "asin": None, "image_url": None,
+            }
             if entry is None:
                 record["image_status"] = "no_asin_in_catalog"
             else:
@@ -507,18 +541,18 @@ def resolve_full_catalog_metadata(
                     record["image_url"] = image_url
                     record["image_status"] = "pending"
                     resolved += 1
-            records[global_id] = record
+            records.append(record)
         progress(
             f"metadata: {block.domain:26s} {resolved}/{block.size} image URLs resolved "
             f"in {time.perf_counter() - t0:.1f}s"
         )
-    return titles, records  # type: ignore[return-value]
+    return titles, records
 
 
 def process_catalog_records_incrementally(
     metadata_records: list[dict[str, object]],
     captioner: Captioner,
-    paraphraser: Paraphraser,
+    paraphraser: Paraphraser | None,
     out_dir: Path,
     identity: dict[str, object],
     image_dir: Path,
@@ -528,31 +562,12 @@ def process_catalog_records_incrementally(
     deadline: float | None = None,
     batch_size: int = 8,
 ) -> list[dict[str, object]]:
-    """Caption+paraphrase every catalog record in `batch_size`-sized chunks,
-    flushing a shard checkpoint at least every `shard_size` records so a
-    cancelled run loses only a bounded amount of work, and resuming
-    automatically from any existing, validated checkpoint whose identity
-    matches.
+    """Caption catalog records and optionally paraphrase in a later GPU pass.
 
-    This is the fix for plans/260915-0955-visual-delta-fusion-pilot/ISSUES.md
-    #23 (checkpointing) and #25 (throughput): the original implementation
-    both wrote its checkpoint only once at the end AND called
-    `caption_batch`/`paraphrase_batch` with a single-item list every time,
-    even though both accept a list — the measured real throughput
-    (0.60 items/s) confirmed the single-item call pattern was the
-    bottleneck, not the model itself. Chunking `batch_size` items per
-    `caption_batch`/`paraphrase_batch` call lets `Florence2Captioner` and
-    `QwenParaphraser` actually batch the GPU forward pass instead of
-    looping one example at a time. `resolve_image` is injected so this
-    function is fully testable offline with a fake, network-free resolver
-    and `StubCaptioner`/`StubParaphraser`.
-
-    `deadline` is an optional `time.perf_counter()`-comparable timestamp
-    (see issue #23/#24: Kaggle enforces a hard ~21,600s script execution
-    cap). It is checked once per chunk (not per item, since a chunk is now
-    one atomic unit of GPU work) and, on expiry, checkpoints whatever is
-    done so far and returns early rather than letting the platform kill the
-    process mid-chunk with an unflushed partial shard.
+    Shard checkpoints are shared by both passes, allowing the frozen captioner
+    and text paraphraser to be released between phases. `deadline` is checked
+    at chunk boundaries so an interrupted Kaggle run persists complete chunks
+    and resumes from the last validated manifest.
     """
     out_dir.mkdir(parents=True, exist_ok=True)
     manifest_path = out_dir / "shard-manifest.json"
@@ -596,26 +611,36 @@ def process_catalog_records_incrementally(
             chunk_records.append(record)
         eligible = [
             record for record in chunk_records
-            if record.get("image_status") == "decoded" and record.get("title") and record["global_id"] in image_paths
+            if record.get("image_status") == "decoded"
+            and record.get("title")
+            and record["global_id"] in image_paths
         ]
         if eligible:
-            caption_items = [(record["global_id"], image_paths[record["global_id"]]) for record in eligible]
             caption_results = {
                 result.item_id: result
-                for result in captioner.caption_batch(caption_items)
+                for result in captioner.caption_batch([
+                    (record["global_id"], str(record["title"]), image_paths[record["global_id"]])
+                    for record in eligible
+                ])
             }
-            paraphrase_results = {
-                result.item_id: result
-                for result in paraphraser.paraphrase_batch(
-                    [(record["global_id"], str(record["title"])) for record in eligible]
-                )
-            }
+            paraphrase_results = {}
+            if paraphraser is not None:
+                paraphrase_results = {
+                    result.item_id: result
+                    for result in paraphraser.paraphrase_batch(
+                        [(record["global_id"], str(record["title"])) for record in eligible]
+                    )
+                }
             for record in eligible:
-                caption_result = caption_results.get(record["global_id"])
-                paraphrase_result = paraphrase_results.get(record["global_id"])
+                item_id = record["global_id"]
+                caption_result = caption_results.get(item_id)
                 if caption_result is not None:
                     record["caption_status"] = caption_result.status
+                    record["caption_generated_tokens"] = caption_result.generated_token_count
+                    record["caption_title_sha256"] = text_sha256(str(record["title"]))
+                    record["caption_image_sha256"] = record.get("image_sha256")
                     record["caption_raw"] = caption_result.raw_text
+                paraphrase_result = paraphrase_results.get(item_id)
                 if paraphrase_result is not None:
                     record["paraphrase_status"] = paraphrase_result.status
                     record["paraphrase_text"] = paraphrase_result.raw_text
@@ -636,6 +661,62 @@ def process_catalog_records_incrementally(
         # nothing since the last checkpoint is lost.
         write_sharded_records(records, out_dir, identity, shard_size)
         progress(f"final checkpoint before stopping: {len(records)}/{total} records saved")
+    return records
+
+
+def process_catalog_paraphrases_incrementally(
+    records: list[dict[str, object]],
+    paraphraser: Paraphraser,
+    out_dir: Path,
+    identity: dict[str, object],
+    shard_size: int = 512,
+    progress: Callable[[str], None] = print,
+    deadline: float | None = None,
+    batch_size: int = 64,
+) -> list[dict[str, object]]:
+    """Paraphrase decoded-image records without keeping the captioner loaded."""
+    manifest_path = out_dir / "shard-manifest.json"
+    if not manifest_path.is_file():
+        raise RuntimeError("paraphrase pass requires a persisted caption checkpoint")
+    existing = json.loads(manifest_path.read_text(encoding="utf-8"))
+    if existing.get("identity") != dict(identity):
+        raise RuntimeError("existing checkpoint identity mismatch before paraphrase pass")
+    pending = [
+        index for index, record in enumerate(records)
+        if record.get("image_status") == "decoded"
+        and record.get("title")
+        and "paraphrase_status" not in record
+    ]
+    progress(f"paraphrase pass: {len(pending)} decoded-image records pending")
+    started_at = time.perf_counter()
+    processed = 0
+    completed_since_checkpoint = 0
+    for offset in range(0, len(pending), batch_size):
+        if deadline is not None and time.perf_counter() >= deadline:
+            progress(f"paraphrase time budget reached after {processed}/{len(pending)} pending records")
+            break
+        indices = pending[offset:offset + batch_size]
+        items = [(int(records[index]["global_id"]), str(records[index]["title"])) for index in indices]
+        results = {result.item_id: result for result in paraphraser.paraphrase_batch(items)}
+        for index in indices:
+            record = records[index]
+            result = results.get(int(record["global_id"]))
+            if result is not None:
+                record["paraphrase_status"] = result.status
+                record["paraphrase_text"] = result.raw_text
+                record["paraphrase_generated_tokens"] = result.generated_token_count
+        processed += len(indices)
+        completed_since_checkpoint += len(indices)
+        if completed_since_checkpoint >= shard_size or processed == len(pending):
+            write_sharded_records(records, out_dir, identity, shard_size)
+            progress(
+                f"paraphrase checkpoint: {processed}/{len(pending)} pending "
+                f"elapsed={time.perf_counter() - started_at:.1f}s"
+            )
+            completed_since_checkpoint = 0
+    if completed_since_checkpoint:
+        write_sharded_records(records, out_dir, identity, shard_size)
+        progress(f"paraphrase checkpoint saved after {processed}/{len(pending)} pending records")
     return records
 
 
@@ -663,8 +744,7 @@ def run_full_corpus_generation(
     """
     t_start = time.perf_counter()
     _titles, metadata_records = resolve_full_catalog_metadata(mixed_root, temp_dir, progress=progress)
-    captioner = Florence2Captioner(revision=CAPTION_MODEL_REVISION)
-    paraphraser = QwenParaphraser(model_id=PARAPHRASE_MODEL_ID, revision=PARAPHRASE_MODEL_REVISION)
+    captioner = Qwen3VLCaptioner(batch_size=CAPTION_BATCH_SIZE)
     image_dir = temp_dir / "full_corpus_images"
     image_dir.mkdir(parents=True, exist_ok=True)
 
@@ -672,30 +752,59 @@ def run_full_corpus_generation(
         dest = image_dir / f"{record['global_id']}.bin"
         return download_image(str(record["image_url"]), dest)
 
+    input_catalog_sha256 = input_catalog_fingerprint(metadata_records)
     identity = {
         "stage": "full_corpus_generation",
         "catalog_size": CATALOG_SIZE,
+        "input_catalog_sha256": input_catalog_sha256,
+        "caption_model": captioner.model_id,
+        "caption_revision": captioner.model_revision,
+        "processor_revision": captioner.processor_revision,
+        "caption_prompt_sha256": prompt_sha256(),
+        "caption_max_new_tokens": CAPTION_MAX_NEW_TOKENS,
+        "caption_do_sample": False,
+        "caption_batch_size": CAPTION_BATCH_SIZE,
         "paraphrase_model": PARAPHRASE_MODEL_ID,
         "paraphrase_revision": PARAPHRASE_MODEL_REVISION,
-        "caption_revision": CAPTION_MODEL_REVISION,
         "shuffle_seed": 7001,
         "shard_size": shard_size,
     }
     out_dir = work_dir / "full_corpus"
     deadline = t_start + time_budget_seconds if time_budget_seconds is not None else None
     records = process_catalog_records_incrementally(
-        metadata_records, captioner, paraphraser, out_dir, identity, image_dir, resolve_image,
+        metadata_records, captioner, None, out_dir, identity, image_dir, resolve_image,
         shard_size=shard_size, progress=progress, deadline=deadline,
     )
+    del captioner
+    import gc
+    import torch
+    gc.collect()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+    if len(records) == len(metadata_records):
+        paraphraser = QwenParaphraser(model_id=PARAPHRASE_MODEL_ID, revision=PARAPHRASE_MODEL_REVISION)
+        records = process_catalog_paraphrases_incrementally(
+            records, paraphraser, out_dir, identity, shard_size=shard_size,
+            progress=progress, deadline=deadline,
+        )
+        del paraphraser
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
 
-    if len(records) < len(metadata_records):
+    pending_paraphrases = sum(
+        record.get("image_status") == "decoded" and "paraphrase_status" not in record
+        for record in records
+    )
+    if len(records) < len(metadata_records) or pending_paraphrases:
         status = {
             "status": "partial",
             "identity": identity,
             "record_count": len(records),
             "catalog_size": len(metadata_records),
-            "note": "time budget expired before the full catalog was generated; "
-                    "re-run the same identity to resume and finish generation before arm assembly",
+            "paraphrase_pending_count": pending_paraphrases,
+            "note": "time budget expired before captioning or paraphrasing completed; "
+                    "re-run the same identity to resume before arm assembly",
         }
         progress(json.dumps(status, indent=2, sort_keys=True))
         return status
@@ -711,10 +820,7 @@ def run_full_corpus_generation(
                 except (KeyError, SyntaxError, ValueError):
                     continue
     frequencies = compute_training_frequencies(sequences)
-    real_cues = {record["global_id"]: record["caption_raw"] for record in records if record.get("caption_status") == "ok"}
-    paraphrase_cues = {
-        record["global_id"]: record["paraphrase_text"] for record in records if record.get("paraphrase_status") == "ok"
-    }
+    real_cues, paraphrase_cues = matched_cue_maps(records)
     donor_map = frequency_bin_derangement(sorted(real_cues), frequencies, seed=7001)
     rows = [
         CatalogRow(

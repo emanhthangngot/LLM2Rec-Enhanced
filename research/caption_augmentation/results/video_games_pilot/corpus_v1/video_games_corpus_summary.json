@@ -1,0 +1,31 @@
+{
+  "arms_file": "video_games_paired_arms.jsonl",
+  "arms_sha256": "f87fd317cd24fbc9cfa72784423755c40d08a07790ab6f2b3f5a64c758d32602",
+  "caption_status_counts": {
+    "None": 3,
+    "mismatch": 616,
+    "ok": 8898
+  },
+  "identity": {
+    "caption_batch_size": 1,
+    "caption_do_sample": false,
+    "caption_max_new_tokens": 96,
+    "caption_model": "Qwen/Qwen3-VL-4B-Instruct",
+    "caption_prompt_sha256": "eff7c0caf4c4366844239f70e460cfca73a827af4ecebfa61f0dc0b7090cc091",
+    "caption_revision": "ebb281ec70b05090aa6165b016eac8ec08e71b17",
+    "catalog_size": 9517,
+    "domain": "Video_Games",
+    "input_catalog_sha256": "04aff8a4e4afaddd750e718dfaa675ac156a98c7481113656ef1515cee753b23",
+    "processor_revision": "ebb281ec70b05090aa6165b016eac8ec08e71b17",
+    "shard_size": 512,
+    "stage": "video_games_corpus_generation"
+  },
+  "image_status_counts": {
+    "decoded": 9514,
+    "download_failed": 2,
+    "missing_metadata": 1
+  },
+  "item_count": 9517,
+  "kernel_seconds": 9843.880399537,
+  "usable_real_cue_count": 8898
+}

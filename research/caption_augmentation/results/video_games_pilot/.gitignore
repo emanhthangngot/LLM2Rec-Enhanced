@@ -1,0 +1,4 @@
+# Regenerable Kaggle outputs: CSFT/SimCSE inputs (up to 147 MB) and item embeddings.
+# Their SHA-256 hashes are recorded in the per-arm artifact JSON files.
+arm-inputs/
+*.npy

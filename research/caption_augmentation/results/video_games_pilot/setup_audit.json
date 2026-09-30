@@ -1,0 +1,43 @@
+{
+  "question": "Is the title-only > real result a setup error or a genuine no-gain?",
+  "setup_checks": {
+    "id_bridge": "PASS: 9517/9517 CSV items mapped bijectively via shard ASINs",
+    "cue_injection": "PASS: 581106/581106 real-arm CSFT history items carry 'Visual cues'; 9517/9517 IEM texts",
+    "csft_targets": "PASS: target is the original item_title in both arms",
+    "history_parity": "PASS: identical history counts both arms; 0 items truncated (581106/581106)",
+    "text_truncation": "PASS: CSFT cutoff 1024 applied via shared suffix; IEM/extract max 512/400 tokens vs cue cap 32",
+    "pooling": "PASS: extraction uses utils.llm2vec_encoder default mean pooling, same as SimCSE",
+    "csft_convergence": "PASS: loss quintiles title-only [2.055,1.504,1.139,0.927,0.787] vs real [2.035,1.472,1.108,0.909,0.777]",
+    "resume_integrity": "PASS: real v4 restored CSFT with SHA 0ab4cbed... equal to v3",
+    "pipeline_level": "PASS: title-only Recall@10 0.0838 vs prior v9 AmazonMix-6 caption IEM 0.0708"
+  },
+  "embedding_geometry": {
+    "n_train_next_pairs": 107119,
+    "unavailable_items": 619,
+    "title-only": {
+      "raw_mean_cos_random_pairs": 0.00710453803618672,
+      "effective_rank_centered": 286.6190867824221,
+      "cf_auc_next_vs_random": 0.6202400452705956,
+      "zero_shot_next_item_hit@10": 0.02425,
+      "zero_shot_next_item_median_rank": 3051.5,
+      "same_color_minus_diff_color_cos": 0.041771665972252736,
+      "unavailable_vs_cue_mean_cos_to_centroid_gap": 0.085372116578681
+    },
+    "real": {
+      "raw_mean_cos_random_pairs": 0.006660712717727461,
+      "effective_rank_centered": 470.2699958236158,
+      "cf_auc_next_vs_random": 0.587866429544774,
+      "zero_shot_next_item_hit@10": 0.0205,
+      "zero_shot_next_item_median_rank": 3630.0,
+      "same_color_minus_diff_color_cos": 0.05912202425493033,
+      "unavailable_vs_cue_mean_cos_to_centroid_gap": 0.20184195299348295
+    },
+    "knn10_overlap_between_arms": 0.20095000000000002
+  },
+  "cf_auc_cue_only_pairs": {
+    "title-only": 0.6204,
+    "real": 0.5876
+  },
+  "verdict": "GENUINE_NO_GAIN_IN_THIS_DESIGN: captions enter the model and reorganize item space toward visual attributes (same-color attraction +41%, kNN@10 overlap 20%), reducing next-item alignment independent of SASRec",
+  "residual_uncertainty": "n=1 LLM chain per arm; chain-seed variance unmeasured"
+}

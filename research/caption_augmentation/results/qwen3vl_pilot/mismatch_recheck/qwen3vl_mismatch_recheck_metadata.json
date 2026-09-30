@@ -1,0 +1,24 @@
+{
+  "model": "Qwen/Qwen3-VL-4B-Instruct",
+  "model_revision": "ebb281ec70b05090aa6165b016eac8ec08e71b17",
+  "transformers_version": "4.57.1",
+  "prompt_structured_sha256": "eff7c0caf4c4366844239f70e460cfca73a827af4ecebfa61f0dc0b7090cc091",
+  "prompt_generic_sha256": "2a3b206e55ca482dee92db568217070a220ec32515acd31b0097c0d61a171c37",
+  "expected_row_ids": [
+    4,
+    5,
+    10,
+    51,
+    65,
+    82,
+    83,
+    85,
+    88
+  ],
+  "output_row_count": 9,
+  "output_sha256": "cc17c7b82037dcf4bc7d635bc5ff45ece1cc45c7bdd8d7092e56de09bec20a1a",
+  "elapsed_seconds": 31.47,
+  "gpu": "Tesla T4",
+  "torch_version": "2.10.0+cu128",
+  "cuda_version": "12.8"
+}

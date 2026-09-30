@@ -9,7 +9,12 @@ import json
 import zipfile
 from pathlib import Path
 
-PACKAGE_FILES = ("__init__.py", "corpus.py", "caption.py", "crosswalk.py", "smoke.py", "pipeline.py", "experiment.json")
+PACKAGE_FILES = (
+    "__init__.py", "corpus.py", "caption.py", "crosswalk.py", "smoke.py", "pipeline.py",
+    "video_games_pilot.py", "experiment.json",
+)
+VIDEO_GAMES_STAGE = "video_games_corpus_generation"
+PILOT_REVIEW_DIR = Path(__file__).parent / "results" / "qwen3vl_pilot"
 
 
 def sha256_bytes(data: bytes) -> str:
@@ -81,19 +86,40 @@ print(result["status"])
 )
 
 # Each cell reuses tested building blocks from smoke.py/caption.py directly;
-# the notebook only orchestrates and prints per-stage progress so a failure
-# in one cell (e.g. Florence-2 load) still leaves every earlier cell's real
-# output (metadata coverage, image download counts) visible in the pushed
-# kernel version, instead of one opaque script traceback.
+# the notebook keeps stage outputs visible if image download or Qwen3-VL fails.
 def _real_generation_notebook_cells(
-    sample_call: str, stage: str, output_filename: str
+    sample_call: str, stage: str, output_filename: str, include_paraphrases: bool = True
 ) -> tuple[str, ...]:
-    """Build the shared 9-cell real-generation notebook body, parameterized
-    by the sample-selection call, stage name, and output filename. Used for
-    both the 64-item smoke (`real_generator_smoke`) and the Phase 1 Step 6
-    50-items-per-domain quality review (`quality_review`) — identical
-    orchestration, different sample and output.
-    """
+    """Build the shared real-generation notebook body for review and smoke stages."""
+    if include_paraphrases:
+        paraphrase_cell = '''paraphrase_items = [
+    (record["global_id"], str(record["title"]))
+    for record in records if record.get("title")
+]
+t0 = time.perf_counter()
+paraphraser = QwenParaphraser()
+paraphrase_model_load_seconds = time.perf_counter() - t0
+print(f"Qwen2.5 paraphraser loaded in {paraphrase_model_load_seconds:.1f}s")
+t0 = time.perf_counter()
+paraphrase_results = paraphraser.paraphrase_batch(paraphrase_items)
+paraphrase_seconds = time.perf_counter() - t0
+print(f"paraphrased {len(paraphrase_results)} titles in {paraphrase_seconds:.1f}s")
+paraphrase_by_id = {r.item_id: r for r in paraphrase_results}
+for record in records:
+    result = paraphrase_by_id.get(record["global_id"])
+    if result is None:
+        continue
+    record["paraphrase_status"] = result.status
+    record["paraphrase_text"] = result.raw_text
+    record["paraphrase_generated_tokens"] = result.generated_token_count
+    record["paraphrase_hit_token_cap"] = result.generated_token_count == PARAPHRASE_MAX_NEW_TOKENS
+'''
+    else:
+        paraphrase_cell = '''paraphrase_items = []
+paraphrase_results = []
+paraphrase_seconds = 0.0
+paraphrase_model_load_seconds = 0.0
+'''
     return (
         '''from caption import ensure_runtime_dependencies
 resolved = ensure_runtime_dependencies()
@@ -103,13 +129,13 @@ print("pinned runtime dependencies:", resolved)
 from pathlib import Path
 
 from smoke import (
-    select_smoke_sample, select_quality_review_sample, locate_mixed_root, load_asin_titles,
+    select_smoke_sample, select_quality_review_sample, select_video_games_smoke_sample,
+    locate_mixed_root, load_asin_titles,
     fetch_domain_image_urls, download_image,
 )
 from caption import (
-    CAPTION_MODEL_REVISION, CAPTION_MODEL_REVISION_FALLBACK,
-    CAPTION_MAX_NEW_TOKENS, PARAPHRASE_MAX_NEW_TOKENS,
-    Florence2Captioner, QwenParaphraser,
+    CAPTION_MAX_NEW_TOKENS, CAPTION_BATCH_SIZE, PARAPHRASE_MAX_NEW_TOKENS,
+    Qwen3VLCaptioner, QwenParaphraser, prompt_sha256, text_sha256, file_sha256,
 )
 
 mixed_root = locate_mixed_root()
@@ -181,23 +207,13 @@ decoded_count = sum(1 for r in records if r.get("image_status") == "decoded")
 print(f"downloaded+decoded {decoded_count}/{len(records)} images in {download_seconds:.1f}s")
 ''',
         '''caption_items = [
-    (record["global_id"], Path(str(record["image_path"])))
+    (record["global_id"], str(record["title"]), Path(str(record["image_path"])))
     for record in records if record.get("image_status") == "decoded"
 ]
 t0 = time.perf_counter()
-revision_used = CAPTION_MODEL_REVISION
-revision_fallback_triggered = False
-revision_error = None
-try:
-    captioner = Florence2Captioner(revision=CAPTION_MODEL_REVISION)
-except Exception as exc:
-    revision_error = f"{type(exc).__name__}: {exc}"
-    revision_used = CAPTION_MODEL_REVISION_FALLBACK
-    revision_fallback_triggered = True
-    print("primary Florence-2 revision failed to load:", revision_error)
-    captioner = Florence2Captioner(revision=CAPTION_MODEL_REVISION_FALLBACK)
+captioner = Qwen3VLCaptioner()
 caption_model_load_seconds = time.perf_counter() - t0
-print(f"Florence-2 loaded (revision={revision_used}) in {caption_model_load_seconds:.1f}s")
+print(f"Qwen3-VL loaded (revision={captioner.model_revision}) in {caption_model_load_seconds:.1f}s")
 ''',
         '''t0 = time.perf_counter()
 caption_results = captioner.caption_batch(caption_items)
@@ -213,53 +229,40 @@ for record in records:
     record["caption_raw"] = result.raw_text
     record["caption_generated_tokens"] = result.generated_token_count
     record["caption_hit_token_cap"] = result.generated_token_count == CAPTION_MAX_NEW_TOKENS
+    record["caption_title_sha256"] = text_sha256(str(record["title"]))
+    record["caption_image_sha256"] = file_sha256(Path(str(record["image_path"])))
 for record in records:
     if "caption_raw" in record:
-        print(record["domain"], record["global_id"], "->", record["caption_raw"])
+        print(record["domain"], record["global_id"], "->", record["caption_status"], record["caption_raw"])
 ''',
-        '''paraphrase_items = [
-    (record["global_id"], str(record["title"]))
-    for record in records if record.get("title")
-]
-t0 = time.perf_counter()
-paraphraser = QwenParaphraser()
-paraphrase_model_load_seconds = time.perf_counter() - t0
-print(f"Qwen2.5 paraphraser loaded in {paraphrase_model_load_seconds:.1f}s")
-t0 = time.perf_counter()
-paraphrase_results = paraphraser.paraphrase_batch(paraphrase_items)
-paraphrase_seconds = time.perf_counter() - t0
-print(f"paraphrased {len(paraphrase_results)} titles in {paraphrase_seconds:.1f}s")
-paraphrase_by_id = {r.item_id: r for r in paraphrase_results}
-for record in records:
-    result = paraphrase_by_id.get(record["global_id"])
-    if result is None:
-        continue
-    record["paraphrase_status"] = result.status
-    record["paraphrase_text"] = result.raw_text
-    record["paraphrase_generated_tokens"] = result.generated_token_count
-    record["paraphrase_hit_token_cap"] = result.generated_token_count == PARAPHRASE_MAX_NEW_TOKENS
-''',
+        paraphrase_cell,
         f'''import json
 
 decoded_count = sum(1 for r in records if r.get("image_status") == "decoded")
 captioned_ok = sum(1 for r in records if r.get("caption_status") == "ok")
+caption_mismatch = sum(1 for r in records if r.get("caption_status") == "mismatch")
+caption_terminal = captioned_ok + caption_mismatch
 paraphrased_ok = sum(1 for r in records if r.get("paraphrase_status") == "ok")
 caption_cap_hits = sum(1 for r in records if r.get("caption_hit_token_cap"))
 paraphrase_cap_hits = sum(1 for r in records if r.get("paraphrase_hit_token_cap"))
 
 result = {{
-    "status": "PASS" if decoded_count > 0 and captioned_ok > 0 and paraphrased_ok > 0 else "FAIL",
+    "status": "PASS" if decoded_count > 0 and caption_terminal > 0 and ({not include_paraphrases} or paraphrased_ok > 0) else "FAIL",
     "stage": "{stage}",
     "sample_size": len(sample),
     "domains_sampled": sorted(by_domain),
     "image_coverage": decoded_count / len(sample),
     "caption_ok_rate": captioned_ok / max(decoded_count, 1),
+    "caption_mismatch_count": caption_mismatch,
+    "caption_terminal_rate": caption_terminal / max(decoded_count, 1),
     "caption_token_cap_hit_rate": caption_cap_hits / max(decoded_count, 1),
-    "paraphrase_ok_rate": paraphrased_ok / max(len(paraphrase_items), 1),
-    "paraphrase_token_cap_hit_rate": paraphrase_cap_hits / max(len(paraphrase_items), 1),
-    "caption_model_revision_used": revision_used,
-    "caption_model_revision_fallback_triggered": revision_fallback_triggered,
-    "caption_model_revision_primary_error": revision_error,
+    "paraphrases_included": {include_paraphrases},
+    "paraphrase_ok_rate": paraphrased_ok / max(len(paraphrase_items), 1) if {include_paraphrases} else None,
+    "paraphrase_token_cap_hit_rate": paraphrase_cap_hits / max(len(paraphrase_items), 1) if {include_paraphrases} else None,
+    "caption_model_id": captioner.model_id,
+    "caption_model_revision": captioner.model_revision,
+    "processor_revision": captioner.processor_revision,
+    "caption_prompt_sha256": prompt_sha256(),
     "timing_seconds": {{
         "metadata_stream": metadata_seconds,
         "image_download": download_seconds,
@@ -268,7 +271,7 @@ result = {{
         "caption_generation_per_image": caption_seconds / max(decoded_count, 1),
         "paraphrase_model_load": paraphrase_model_load_seconds,
         "paraphrase_generation_total": paraphrase_seconds,
-        "paraphrase_generation_per_item": paraphrase_seconds / max(len(paraphrase_items), 1),
+        "paraphrase_generation_per_item": paraphrase_seconds / max(len(paraphrase_items), 1) if {include_paraphrases} else None,
     }},
     "records": records,
 }}
@@ -280,9 +283,9 @@ print(json.dumps({{key: value for key, value in result.items() if key != "record
 
 def _paraphrase_probe_notebook_cells(model_id: str, revision: str, output_filename: str) -> tuple[str, ...]:
     """Lean paraphraser-only comparison: skips metadata streaming, image
-    download, and Florence-2 captioning entirely (paraphrasing is
-    title-only). See plans/260915-0955-visual-delta-fusion-pilot/ISSUES.md
-    #15 for why this comparison is needed.
+    download, and Qwen3-VL captioning entirely (paraphrasing is title-only).
+    See plans/260915-0955-visual-delta-fusion-pilot/ISSUES.md #15 for why
+    this comparison is needed.
     """
     return (
         '''from caption import ensure_runtime_dependencies
@@ -310,6 +313,11 @@ result = run_paraphrase_probe(
 REAL_GENERATOR_SMOKE_NOTEBOOK_CELLS: tuple[str, ...] = _real_generation_notebook_cells(
     "select_smoke_sample()", "real_generator_smoke", "smoke_results.json"
 )
+VIDEO_GAMES_L4_SMOKE_NOTEBOOK_CELLS: tuple[str, ...] = _real_generation_notebook_cells(
+    "select_video_games_smoke_sample()", "video_games_l4_smoke",
+    "video_games_l4_smoke_results.json", include_paraphrases=False,
+)
+
 
 QUALITY_REVIEW_NOTEBOOK_CELLS: tuple[str, ...] = _real_generation_notebook_cells(
     "select_quality_review_sample()", "quality_review", "quality_review_results.json"
@@ -326,7 +334,7 @@ PARAPHRASE_PROBE_3B_NOTEBOOK_CELLS: tuple[str, ...] = _paraphrase_probe_notebook
     "paraphrase_probe_3b_results.json",
 )
 
-_LOCAL_MODULE_NAMES = ("corpus", "caption", "crosswalk", "smoke", "pipeline")
+_LOCAL_MODULE_NAMES = ("corpus", "caption", "crosswalk", "smoke", "pipeline", "video_games_pilot")
 
 
 def _strip_local_imports(source: str) -> str:
@@ -456,54 +464,86 @@ if prior_manifests:
 else:
     print("resume: no prior checkpoint found under /kaggle/input; starting from item 0")
 ''',
-        '''captioner = Florence2Captioner(revision=CAPTION_MODEL_REVISION)
-paraphraser = QwenParaphraser(model_id=PARAPHRASE_MODEL_ID, revision=PARAPHRASE_MODEL_REVISION)
+        '''prior_identity = prior_manifest.get("identity", {}) if prior_manifests else {}
+resume_revision = prior_identity.get("caption_revision")
+captioner = Qwen3VLCaptioner(revision=resume_revision, batch_size=CAPTION_BATCH_SIZE)
 
 def resolve_image(record, image_dir):
     dest = image_dir / f"{record[\'global_id\']}.bin"
     return download_image(str(record["image_url"]), dest)
 
-# Kaggle enforces a hard ~21,600s (6h) script execution cap (see
-# ISSUES.md #22/#24). This budget is measured from KERNEL_START (before
-# dependency pinning and metadata streaming), not from this cell, so an
-# unexpectedly slow earlier stage automatically leaves less time here
-# instead of overrunning the platform's own timeout. 19,800s = 5.5h leaves
-# a 30-minute margin for final checkpoint flush and shutdown.
+# Keep Kaggle's run window below the platform timeout so the last checkpoint
+# can be flushed and uploaded.
 TIME_BUDGET_SECONDS = 19800.0
 DEADLINE = KERNEL_START + TIME_BUDGET_SECONDS
 
+input_catalog_sha256 = input_catalog_fingerprint(metadata_records)
 IDENTITY = {
     "stage": "full_corpus_generation",
     "catalog_size": CATALOG_SIZE,
+    "input_catalog_sha256": input_catalog_sha256,
+    "caption_model": captioner.model_id,
+    "caption_revision": captioner.model_revision,
+    "processor_revision": captioner.processor_revision,
+    "caption_prompt_sha256": prompt_sha256(),
+    "caption_max_new_tokens": CAPTION_MAX_NEW_TOKENS,
+    "caption_do_sample": False,
+    "caption_batch_size": CAPTION_BATCH_SIZE,
     "paraphrase_model": PARAPHRASE_MODEL_ID,
     "paraphrase_revision": PARAPHRASE_MODEL_REVISION,
-    "caption_revision": CAPTION_MODEL_REVISION,
     "shuffle_seed": 7001,
     "shard_size": 512,
 }
 
-# Conservative first value for T4 VRAM (Florence-2-large + Qwen2.5-3B both
-# resident simultaneously); not part of `IDENTITY` since it only affects
-# throughput, never the generated captions/paraphrases themselves — safe to
-# change between resumed pushes without invalidating the checkpoint.
-BATCH_SIZE = 8
-
 records = process_catalog_records_incrementally(
-    metadata_records, captioner, paraphraser, OUT_DIR, IDENTITY, IMAGE_DIR, resolve_image,
-    shard_size=512, deadline=DEADLINE, batch_size=BATCH_SIZE,
+    metadata_records, captioner, None, OUT_DIR, IDENTITY, IMAGE_DIR, resolve_image,
+    shard_size=512, deadline=DEADLINE, batch_size=CAPTION_BATCH_SIZE,
 )
-print(f"generation complete: {len(records)}/{len(metadata_records)} records")
-if len(records) < len(metadata_records):
-    print("TIME BUDGET REACHED: add this kernel's own slug to kernel_sources and "
-          "re-push the identical notebook to resume from the checkpoint above.")
+del captioner
+import gc
+import torch
+gc.collect()
+if torch.cuda.is_available():
+    torch.cuda.empty_cache()
+
+if len(records) == len(metadata_records):
+    paraphrase_pending_before_load = sum(
+        record.get("image_status") == "decoded" and "paraphrase_status" not in record
+        for record in records
+    )
+    if paraphrase_pending_before_load and time.perf_counter() < DEADLINE:
+        paraphraser = QwenParaphraser(model_id=PARAPHRASE_MODEL_ID, revision=PARAPHRASE_MODEL_REVISION)
+        records = process_catalog_paraphrases_incrementally(
+            records, paraphraser, OUT_DIR, IDENTITY, shard_size=512,
+            deadline=DEADLINE, batch_size=64,
+        )
+        del paraphraser
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+    elif paraphrase_pending_before_load:
+        print("paraphrase pass deferred because the per-kernel time budget is exhausted")
+else:
+    print("paraphrase pass deferred until all captions are checkpointed")
+
+paraphrase_pending_count = sum(
+    record.get("image_status") == "decoded" and "paraphrase_status" not in record
+    for record in records
+)
+print(f"generation checkpoint: {len(records)}/{len(metadata_records)} records; "
+      f"{paraphrase_pending_count} paraphrases pending")
+if len(records) < len(metadata_records) or paraphrase_pending_count:
+    print("GENERATION INCOMPLETE: add this kernel's own slug to kernel_sources and "
+          "re-push the identical notebook to resume from its hash-verified checkpoints.")
 ''',
         '''import ast
 import csv
 import json
 
-if len(records) < len(metadata_records):
-    print(f"skipping arm assembly: only {len(records)}/{len(metadata_records)} records generated so far; "
-          "re-push this identical kernel to resume and finish generation before building arms")
+if len(records) < len(metadata_records) or paraphrase_pending_count:
+    print(f"skipping arm assembly: {len(records)}/{len(metadata_records)} records; "
+          f"{paraphrase_pending_count} paraphrases pending. Re-push with this kernel's "
+          "output mounted to resume before building arms.")
 else:
     train_files = sorted((mixed_root / "train").glob("*.csv"))
     sequences = []
@@ -515,8 +555,7 @@ else:
                 except (KeyError, SyntaxError, ValueError):
                     continue
     frequencies = compute_training_frequencies(sequences)
-    real_cues = {r["global_id"]: r["caption_raw"] for r in records if r.get("caption_status") == "ok"}
-    paraphrase_cues = {r["global_id"]: r["paraphrase_text"] for r in records if r.get("paraphrase_status") == "ok"}
+    real_cues, paraphrase_cues = matched_cue_maps(records)
     donor_map = frequency_bin_derangement(sorted(real_cues), frequencies, seed=7001)
     rows = [
         CatalogRow(
@@ -538,8 +577,120 @@ else:
     manifest["available_caption_count"] = len(real_cues)
     manifest["image_decoded_count"] = sum(record.get("image_status") == "decoded" for record in records)
     manifest["paraphrase_ok_count"] = sum(record.get("paraphrase_status") == "ok" for record in records)
+    manifest["paraphrase_pending_count"] = paraphrase_pending_count
     (WORK_DIR / "full_corpus_summary.json").write_text(json.dumps(manifest, indent=2, sort_keys=True), encoding="utf-8")
     print(json.dumps({k: v for k, v in manifest.items() if k != "shards"}, indent=2, sort_keys=True))
+''',
+    )
+
+
+def _video_games_corpus_inline_cells(package_dir: Path) -> tuple[str, ...]:
+    """Video_Games-only Qwen3-VL captions plus title-only/real arm texts.
+
+    No paraphrase pass and no other control arms. Resumes from its own
+    hash-verified shard checkpoints when this kernel's output is mounted.
+    """
+    return (
+        _module_cell(package_dir, "corpus.py"),
+        _module_cell(package_dir, "crosswalk.py"),
+        _module_cell(package_dir, "caption.py"),
+        _module_cell(package_dir, "smoke.py"),
+        _module_cell(package_dir, "video_games_pilot.py"),
+        '''import time
+
+KERNEL_START = time.perf_counter()
+resolved = ensure_runtime_dependencies()
+print("pinned runtime dependencies:", resolved)
+''',
+        '''mixed_root = locate_mixed_root()
+print("mixed_root =", mixed_root)
+_titles, metadata_records = resolve_full_catalog_metadata(mixed_root, domains=[PILOT_DOMAIN])
+if len(metadata_records) != PILOT_CATALOG_SIZE or {r["domain"] for r in metadata_records} != {PILOT_DOMAIN}:
+    raise RuntimeError("metadata is not exactly the Video_Games catalog block")
+print(f"metadata resolved for {len(metadata_records)} {PILOT_DOMAIN} items")
+''',
+        '''import hashlib
+import json
+import shutil
+from pathlib import Path
+
+WORK_DIR = Path("/kaggle/working")
+OUT_DIR = WORK_DIR / "video_games_corpus"
+IMAGE_DIR = Path("/kaggle/temp/video_games_images")
+IMAGE_DIR.mkdir(parents=True, exist_ok=True)
+
+# Resume only from this stage's own checkpoint, located by filename.
+prior_manifests = sorted(Path("/kaggle/input").glob("**/video_games_corpus/shard-manifest.json"))
+prior_manifest = {}
+if prior_manifests:
+    prior_dir = prior_manifests[0].parent
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    prior_manifest = json.loads(prior_manifests[0].read_text(encoding="utf-8"))
+    expected_hash_by_name = {shard["path"]: shard["sha256"] for shard in prior_manifest.get("shards", [])}
+    for item in prior_dir.iterdir():
+        dest = OUT_DIR / item.name
+        expected_hash = expected_hash_by_name.get(item.name)
+        for copy_attempt in range(3):
+            shutil.copy2(item, dest)
+            if expected_hash is None or hashlib.sha256(dest.read_bytes()).hexdigest() == expected_hash:
+                break
+            time.sleep(1.0)
+        else:
+            raise RuntimeError(f"resume-copy: {item.name} failed hash verification 3 times")
+    print(f"resume: copied {len(list(OUT_DIR.glob('shard-*.jsonl')))} shard file(s) from {prior_dir}")
+else:
+    print("resume: no prior checkpoint found; starting from the first Video_Games item")
+''',
+        '''captioner = Qwen3VLCaptioner(
+    revision=prior_manifest.get("identity", {}).get("caption_revision"), batch_size=CAPTION_BATCH_SIZE
+)
+
+def resolve_image(record, image_dir):
+    return download_image(str(record["image_url"]), image_dir / f"{record['global_id']}.bin")
+
+# Stay below the 6-hour push timeout so the final checkpoint is flushed.
+TIME_BUDGET_SECONDS = 19800.0
+IDENTITY = {
+    "stage": "video_games_corpus_generation",
+    "domain": PILOT_DOMAIN,
+    "catalog_size": PILOT_CATALOG_SIZE,
+    "input_catalog_sha256": input_catalog_fingerprint(metadata_records),
+    "caption_model": captioner.model_id,
+    "caption_revision": captioner.model_revision,
+    "processor_revision": captioner.processor_revision,
+    "caption_prompt_sha256": prompt_sha256(),
+    "caption_max_new_tokens": CAPTION_MAX_NEW_TOKENS,
+    "caption_do_sample": False,
+    "caption_batch_size": CAPTION_BATCH_SIZE,
+    "shard_size": 512,
+}
+records = process_catalog_records_incrementally(
+    metadata_records, captioner, None, OUT_DIR, IDENTITY, IMAGE_DIR, resolve_image,
+    shard_size=512, deadline=KERNEL_START + TIME_BUDGET_SECONDS, batch_size=CAPTION_BATCH_SIZE,
+)
+print(f"generation checkpoint: {len(records)}/{len(metadata_records)} records")
+''',
+        '''if len(records) < len(metadata_records):
+    print("GENERATION INCOMPLETE: add this kernel's own slug to kernel_sources and re-push to resume.")
+else:
+    arm_records = build_paired_arm_records(records)
+    arms_path = WORK_DIR / "video_games_paired_arms.jsonl"
+    payload = "".join(json.dumps(record, ensure_ascii=False, sort_keys=True) + "\\n" for record in arm_records)
+    arms_path.write_text(payload, encoding="utf-8")
+    summary = {
+        "identity": IDENTITY,
+        "arms_file": arms_path.name,
+        "arms_sha256": hashlib.sha256(payload.encode("utf-8")).hexdigest(),
+        "item_count": len(arm_records),
+        "image_status_counts": dict(Counter(str(r["image_status"]) for r in arm_records)),
+        "caption_status_counts": dict(Counter(str(r["caption_status"]) for r in arm_records)),
+        "usable_real_cue_count": sum(r["real_cue"] is not None for r in arm_records),
+        "kernel_seconds": time.perf_counter() - KERNEL_START,
+    }
+    (WORK_DIR / "video_games_corpus_summary.json").write_text(
+        json.dumps(summary, indent=2, sort_keys=True), encoding="utf-8"
+    )
+    print(json.dumps(summary, indent=2, sort_keys=True))
 ''',
     )
 
@@ -548,14 +699,16 @@ else:
 # receives the real package directory and inlines tested sibling-module
 # source directly, so the pushed kernel is fully readable/editable in the
 # Kaggle notebook UI without regenerating from a local source bundle.
-INLINE_STAGES = {"full_corpus_generation"}
+INLINE_STAGES = {"full_corpus_generation", VIDEO_GAMES_STAGE}
 
 NOTEBOOK_STAGE_CELLS: dict[str, tuple[str, ...]] = {
     "preflight": PREFLIGHT_NOTEBOOK_CELLS,
     "real_generator_smoke": REAL_GENERATOR_SMOKE_NOTEBOOK_CELLS,
+    "video_games_l4_smoke": VIDEO_GAMES_L4_SMOKE_NOTEBOOK_CELLS,
     "quality_review": QUALITY_REVIEW_NOTEBOOK_CELLS,
     "paraphrase_probe_3b": PARAPHRASE_PROBE_3B_NOTEBOOK_CELLS,
     "full_corpus_generation": _full_corpus_inline_cells,
+    VIDEO_GAMES_STAGE: _video_games_corpus_inline_cells,
 }
 
 
@@ -595,7 +748,16 @@ def write_kernel_package(
     dataset_sources: list[str] | None = None,
     kernel_sources: list[str] | None = None,
     notebook: bool = False,
+    accelerator: str = "NvidiaTeslaT4",
 ) -> dict[str, object]:
+    if stage == VIDEO_GAMES_STAGE:
+        # Fail closed before any Video_Games catalog job is packaged.
+        from video_games_pilot import validate_pilot_review
+
+        validate_pilot_review(
+            PILOT_REVIEW_DIR / "label_sheet_ai_draft.csv",
+            PILOT_REVIEW_DIR / "assistant_visual_audit_manifest.json",
+        )
     bundle, member_hashes = source_bundle(package_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     if notebook:
@@ -620,7 +782,7 @@ def write_kernel_package(
         "kernel_sources": list(kernel_sources or []),
         "competition_sources": [],
         "model_sources": [],
-        "machine_shape": "NvidiaTeslaT4",
+        "machine_shape": accelerator,
     }
     (output_dir / "kernel-metadata.json").write_text(json.dumps(metadata, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     manifest = {
@@ -644,6 +806,12 @@ def main() -> None:
     parser.add_argument("--stage", default="preflight")
     parser.add_argument("--dataset-sources", default="", help="comma-separated Kaggle dataset refs to mount")
     parser.add_argument("--kernel-sources", default="", help="comma-separated Kaggle kernel refs to mount (self-reference to resume from a prior push's output)")
+    parser.add_argument(
+        "--accelerator",
+        choices=("NvidiaTeslaT4", "NvidiaTeslaP100", "NvidiaL4"),
+        default="NvidiaTeslaT4",
+        help="Kaggle GPU machine shape recorded in kernel metadata",
+    )
     parser.add_argument("--notebook", action="store_true", help="emit runner.ipynb (kernel_type=notebook) instead of runner.py")
     args = parser.parse_args()
     dataset_sources = [item for item in args.dataset_sources.split(",") if item]
@@ -652,7 +820,7 @@ def main() -> None:
         write_kernel_package(
             args.package_dir, args.output_dir, args.kernel_id, args.title,
             stage=args.stage, dataset_sources=dataset_sources, kernel_sources=kernel_sources,
-            notebook=args.notebook,
+            notebook=args.notebook, accelerator=args.accelerator,
         ),
         indent=2, sort_keys=True,
     ))

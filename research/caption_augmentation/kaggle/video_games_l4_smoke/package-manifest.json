@@ -1,0 +1,16 @@
+{
+  "bundle_sha256": "21b1a974d5ca0d6c864e905cdf1c0a7eba9c94aab892641efcb9e9d86a6fbeaf",
+  "members": {
+    "visual_delta_fusion/__init__.py": "42f640b9186d888a9f347398b8d38471f324bcd8dddc0a261571473027b835e2",
+    "visual_delta_fusion/caption.py": "c6363d407bcb92d8ecf51a4eb2594d2ece665823767fba42852560b4e6b452ed",
+    "visual_delta_fusion/corpus.py": "e9517953463ba40bffc4b60e78ab03e2d7d7bc67acb55c9fb5ce8a94606d9197",
+    "visual_delta_fusion/crosswalk.py": "c3f569c764ffafc26b64ac058e0d48f874f67353832a9bdeb42b09450ae7ce53",
+    "visual_delta_fusion/experiment.json": "d2722a418954d77161b4334aea1f8e439d2d82ff6a6fe3e4a5db86c0aec1977a",
+    "visual_delta_fusion/pipeline.py": "2e48630163553a432e9a834622a75f9e85e4f56f7d4bfdcd0cf054958cd6ab12",
+    "visual_delta_fusion/smoke.py": "d3ac94ecbdb8265dbaf5183f0a5779721f4ca1d1b99abf4a72d2fc7ce7058ee0"
+  },
+  "metadata_sha256": "d15900302eec24e6a41276aa8d4a5b422b335076dd4f677b7f44c0403cbca5e2",
+  "notebook": true,
+  "runner_sha256": "e3e50a56b3c4a5ef73c37110db4129a68044ee0cbe870fc7d504f6e605924cf9",
+  "stage": "video_games_l4_smoke"
+}

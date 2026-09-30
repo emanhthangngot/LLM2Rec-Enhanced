@@ -1,0 +1,83 @@
+{
+  "arm": "real",
+  "base_model": {
+    "id": "Qwen/Qwen2-0.5B",
+    "revision": "91d2aff3f957f99e4c74c962f2f408dcc88a18d8"
+  },
+  "chain_seed": 2024,
+  "corpus": {
+    "arms_sha256": "f87fd317cd24fbc9cfa72784423755c40d08a07790ab6f2b3f5a64c758d32602",
+    "asins_from_verified_shards": 9517,
+    "identity": {
+      "caption_batch_size": 1,
+      "caption_do_sample": false,
+      "caption_max_new_tokens": 96,
+      "caption_model": "Qwen/Qwen3-VL-4B-Instruct",
+      "caption_prompt_sha256": "eff7c0caf4c4366844239f70e460cfca73a827af4ecebfa61f0dc0b7090cc091",
+      "caption_revision": "ebb281ec70b05090aa6165b016eac8ec08e71b17",
+      "catalog_size": 9517,
+      "domain": "Video_Games",
+      "input_catalog_sha256": "04aff8a4e4afaddd750e718dfaa675ac156a98c7481113656ef1515cee753b23",
+      "processor_revision": "ebb281ec70b05090aa6165b016eac8ec08e71b17",
+      "shard_size": 512,
+      "stage": "video_games_corpus_generation"
+    },
+    "summary_path": "/kaggle/input/notebooks/trixuanle/llm2rec-qwen3vl-video-games-corpus-v1/video_games_corpus_summary.json",
+    "usable_real_cue_count": 8898
+  },
+  "csft": {
+    "checkpoint": "/kaggle/working/csft-output/checkpoint-1000",
+    "elapsed_seconds": 18810.353096961975,
+    "model_sha256": "0ab4cbed9d5533e75f48ec464a529a14e70709f6bb0a77b8683f2a08c4459929",
+    "resumed_from": null,
+    "status": "complete"
+  },
+  "cuda_device": "Tesla T4",
+  "dataset_hashes": {
+    "downstream/item_titles.json": "17f501809c4159905cfa6dfa5626d3d52d0be32bc9747ee89b003662f6f5e84c",
+    "downstream/test_data.txt": "80074ffea37928d92c35038e9d8bbf3de0cfcf01308ae4173e3c680c1bc50d1f",
+    "downstream/train_data.txt": "1300e5deec29d4bede6e32bfa1a5eade563f53a6916da95d67754ec40b9475b8",
+    "downstream/val_data.txt": "484a97cfbcff2a78e92612b15863ce08c84c285c7bfb325ec1f33d3884e6de16",
+    "test/Video_Games_5_1996-9-2023-10.csv": "f7d2195aa484f1335cc0d89c0d28633f549bfb3ec0dcd491c6a3e3243d240cbe",
+    "train/Video_Games_5_1996-9-2023-10.csv": "87814fd96b6d593af6a26918537b4a42c26db17bcaa6a6bc824c113f3359f4ad",
+    "valid/Video_Games_5_1996-9-2023-10.csv": "07393a1dc5a05c967532e80589d1c94d551060cd76f776314bd314c3499214a2"
+  },
+  "dependencies": {
+    "llm2vec": "0.2.3",
+    "peft": "0.12.0",
+    "transformers": "4.44.2"
+  },
+  "inputs": {
+    "item_texts_sha256": "33591f6d3635666fb0e42d49c8d6479f0766a869cdf4c9d10eb77acb6551a76c",
+    "real_texts_with_cue": 8898,
+    "render_stats": {
+      "csv_items_mapped_by_asin_or_unique_title": 9517,
+      "train": {
+        "history_items": 581106,
+        "history_items_dropped": 0,
+        "rows": 122577
+      },
+      "valid": {
+        "history_items": 80616,
+        "history_items_dropped": 0,
+        "rows": 15322
+      }
+    },
+    "train_csv_sha256": "358af54989cfd9c93c0ee4e592f8ad52cf0ebf57b73e44fc5f05df3576e59caf",
+    "valid_csv_sha256": "6a361cfd3056efdb787f5cb3be5b97d3e36998422a46141139b06d094ede554c"
+  },
+  "kernel_seconds": 18986.280272722244,
+  "qwen2_bidirectional_mask_patch": {
+    "original_sha256": "ef0985fe8d386d5d8ebafb98968ed6381a4a69ed43d6a75af7b1f823d08e67b7",
+    "patched_sha256": "2a4eb6469674e75653005744d959e98e48701842ac2985c473a86e699a79f15b",
+    "path": "/usr/local/lib/python3.12/dist-packages/llm2vec/models/bidirectional_qwen2.py"
+  },
+  "restored_stages": [],
+  "sasrec_seeds": [
+    2024,
+    2025,
+    2026
+  ],
+  "source_commit": "73b481f710f67166ab958f4985d27b27fb410871",
+  "status": "INCOMPLETE"
+}

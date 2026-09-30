@@ -1,0 +1,25 @@
+{
+  "already_spent_gpu_hours": {
+    "qwen3vl_full_corpus_v1_v4_T4": 6.18,
+    "video_games_l4_smoke": 0.1
+  },
+  "assumptions": {
+    "L4_speedup_over_T4_for_csft": "2x (optimistic, unmeasured)",
+    "iem_mntp_simcse_hours_per_chain": "1.0 (unmeasured; no IEM log retained)"
+  },
+  "cap_gpu_hours": 30,
+  "captured_at": "2026-09-29",
+  "gate": "FAIL for six full chains: stop before full generation per phase-02/03 stop rule",
+  "measured_inputs": {
+    "caption_s_per_image_L4": 2.801,
+    "csft_1000_steps_T4_hours": 5.68,
+    "csft_steps_video_games_1_epoch_batch128": 958,
+    "sasrec_eval_2emb_x3seeds_T4_hours": 0.73,
+    "video_games_items": 9517
+  },
+  "scenarios": {
+    "one_llm_chain_per_arm_3_sasrec_seeds": 22.8,
+    "six_full_chains_as_planned": 37.7,
+    "six_full_chains_excluding_prior_spend": 31.4
+  }
+}

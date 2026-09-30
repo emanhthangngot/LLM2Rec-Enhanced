@@ -1,0 +1,46 @@
+{
+  "audit_csv": "research/caption_augmentation/results/qwen3vl_pilot/assistant_visual_audit.csv",
+  "domain_counts": {
+    "Arts_Crafts_and_Sewing": 10,
+    "Electronics": 10,
+    "Home_and_Kitchen": 10,
+    "Movies_and_TV": 10,
+    "Tools_and_Home_Improvement": 10,
+    "Video_Games": 50
+  },
+  "gates_pass": true,
+  "label_counts": {
+    "ADDS": 76,
+    "GENERIC": 2,
+    "MISMATCH_OK": 1,
+    "OCR": 2,
+    "REDUNDANT": 9,
+    "SUSPECT": 10
+  },
+  "notes": {
+    "condition_claims": [
+      36,
+      42
+    ],
+    "integrated_controller_wording": [
+      22
+    ],
+    "material_ambiguity": [
+      20
+    ],
+    "wrong_cartridge_wording": [
+      43
+    ]
+  },
+  "review_date": "2026-09-29",
+  "review_method": "All 100 numbered source images were visually compared with their titles and structured captions using ten numbered contact sheets. AI draft labels were independently upheld or corrected; labels are not represented as independent human annotations.",
+  "reviewer": "assistant (user-delegated visual audit)",
+  "rows_reviewed": 100,
+  "source_sheet_sha256_after_labels": "7b7b748bf3450d590b8661f0b27ed3eff35f2b2ce7000e66a3915c6611f0ac8e",
+  "thresholds": {
+    "ADDS_min": 40,
+    "OCR_plus_REDUNDANT_max": 20,
+    "SUSPECT_max": 10
+  },
+  "video_games_rows": 50
+}

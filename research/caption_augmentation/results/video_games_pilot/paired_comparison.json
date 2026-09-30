@@ -1,0 +1,79 @@
+{
+  "protocol": "one LLM chain per arm (chain seed 2024), SASRec seeds 2024/2025/2026, test split, Video_Games 9517 items",
+  "verdict": "NO_GAIN_FROM_CAPTIONS",
+  "comparison": {
+    "recall@10": {
+      "title_only_mean": 0.0837738464275996,
+      "title_only_sd": 0.0008492338404057761,
+      "real_mean": 0.07833540191253026,
+      "real_sd": 0.004694435300614242,
+      "paired_delta_mean": -0.0054384445150693255,
+      "paired_delta_sd": 0.003852263970898055,
+      "rel_delta_pct": -6.491816655177015,
+      "seeds_real_wins": 0,
+      "per_seed_delta": [
+        -0.00626508891582489,
+        -0.008810281753540039,
+        -0.001239962875843048
+      ]
+    },
+    "recall@20": {
+      "title_only_mean": 0.11022645731767018,
+      "title_only_sd": 0.0008177196190078661,
+      "real_mean": 0.10283016910155614,
+      "real_sd": 0.0048470959426602095,
+      "paired_delta_mean": -0.007396288216114044,
+      "paired_delta_sd": 0.00402950924677885,
+      "rel_delta_pct": -6.710084308341787,
+      "seeds_real_wins": 0,
+      "per_seed_delta": [
+        -0.006982967257499695,
+        -0.011616528034210205,
+        -0.0035893693566322327
+      ]
+    },
+    "ndcg@10": {
+      "title_only_mean": 0.049935463815927505,
+      "title_only_sd": 0.0020618221960204677,
+      "real_mean": 0.04815108701586723,
+      "real_sd": 0.004418745908575876,
+      "paired_delta_mean": -0.0017843768000602722,
+      "paired_delta_sd": 0.0023718007002624503,
+      "rel_delta_pct": -3.5733658280172502,
+      "seeds_real_wins": 1,
+      "per_seed_delta": [
+        -0.0019575394690036774,
+        -0.0040648505091667175,
+        0.0006692595779895782
+      ]
+    },
+    "ndcg@20": {
+      "title_only_mean": 0.05658098558584849,
+      "title_only_sd": 0.002040639625838005,
+      "real_mean": 0.054312399278084435,
+      "real_sd": 0.004486981643093633,
+      "paired_delta_mean": -0.0022685863077640533,
+      "paired_delta_sd": 0.0024471957155099743,
+      "rel_delta_pct": -4.009449966759595,
+      "seeds_real_wins": 1,
+      "per_seed_delta": [
+        -0.0020918510854244232,
+        -0.004799358546733856,
+        8.545070886611938e-05
+      ]
+    }
+  },
+  "gpu_hours": {
+    "prior_T4_corpus_and_L4_smoke": 6.28,
+    "vg_corpus_v1_v2": 8.23,
+    "arm_v1_error_2x": 0.1,
+    "arm_v2_external_cancel_2x": 4.33,
+    "real_v3_csft": 5.2739666666666665,
+    "title_only_v3_full": 5.474980555555556,
+    "real_v4_resume": 1.0772972222222221,
+    "total": 30.766244444444446
+  },
+  "cap_gpu_hours": 30,
+  "cap_overrun_approved_by_user": true,
+  "caveat": "n=1 LLM chain per arm: seed spread covers SASRec only; not a significance test"
+}

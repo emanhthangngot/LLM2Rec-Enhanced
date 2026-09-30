@@ -230,6 +230,30 @@ class ArmTexts:
     shuffle_donor_id: int | None
 
 
+def matched_cue_maps(
+    records: Sequence[Mapping[str, object]],
+) -> tuple[dict[int, str], dict[int, str]]:
+    """Return real/paraphrase cues with one shared usable-item mask.
+
+    A cue is usable only when both caption and paraphrase succeeded. In
+    particular, an explicit `mismatch` caption is retained in the source
+    record but never treated as a real visual cue.
+    """
+    real_cues: dict[int, str] = {}
+    paraphrase_cues: dict[int, str] = {}
+    for record in records:
+        if record.get("caption_status") != "ok" or record.get("paraphrase_status") != "ok":
+            continue
+        real_cue = str(record.get("caption_raw") or "").strip()
+        paraphrase_cue = str(record.get("paraphrase_text") or "").strip()
+        if not real_cue or not paraphrase_cue:
+            continue
+        item_id = int(record["global_id"])
+        real_cues[item_id] = real_cue
+        paraphrase_cues[item_id] = paraphrase_cue
+    return real_cues, paraphrase_cues
+
+
 def build_arms(
     rows: Sequence[CatalogRow],
     real_cues: Mapping[int, str],

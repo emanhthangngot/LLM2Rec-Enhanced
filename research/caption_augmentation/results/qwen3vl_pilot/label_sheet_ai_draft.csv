@@ -1,0 +1,195 @@
+n,domain,title,structured,florence_label,ai_label,ai_confidence,ai_rationale,human_label
+1,Video_Games,Valkyrie Profile: Covenant of the Plume - Nintendo DS,"color: red, white, blue, black; art style: fantasy illustration; characters or scene shown: angelic warrior and human swordsman in combat; mood/theme: epic battle; target audience cues: teen-rated.",OCR,ADDS,high,"Winged warrior vs swordsman and palette match the cover; ""teen-rated"" is read from the ESRB box (minor).",ADDS
+2,Video_Games,"Mayflash GameCube Controller Adapter for Wii U, PC USB and Switch, 4 Port","color: black
+shape/form factor: rectangular
+included items: two USB cables
+material: plastic
+mood/theme: minimalist, technical",ADDS,ADDS,high,Black rectangular hub and two USB cables match the image.,ADDS
+3,Video_Games,Dance Dance Revolution WII,"color: blue-dominated background with white and light accents.  
+art style: dynamic, energetic, stylized human figures.  
+mood/theme: lively, dance-focused, interactive fun.  
+characters or scene shown: multiple dancers in motion, holding controllers.",OCR,ADDS,high,Blue background and dancers holding controllers match the cover.,ADDS
+4,Video_Games,Grand Theft Auto Double Pack: Grand Theft Auto III / Grand Theft Auto: Vice City,MISMATCH,OCR,SUSPECT,high,False MISMATCH: the image is the GTA III / Vice City Xbox double pack.,SUSPECT
+5,Video_Games,Crackdown - Xbox 360,MISMATCH,OCR,SUSPECT,high,False MISMATCH: the image is the Crackdown Xbox 360 cover.,SUSPECT
+6,Video_Games,Microsoft Xbox 360 Wireless Controller for Windows,"color: white; shape/form factor: ergonomic handheld controller; material: plastic; mood/theme: clean, modern; target audience cues: gamers.",ADDS,ADDS,high,White controller colour is not in the title.,ADDS
+7,Video_Games,"Armor3 ""ReadyVolt"" USB AC Adapter for Turbografx-16 Mini and PC Engine Mini - Not Machine Specific","color: black. shape/form factor: compact rectangular. included items: adapter and packaging. material: plastic. mood/theme: minimalist, functional.",ADDS,ADDS,high,Black compact adapter with packaging matches the image.,ADDS
+8,Video_Games,Necronomicon - PC,"color: dark red, black, gray; art style: horror, gothic; mood/theme: eerie, supernatural; characters or scene shown: haunted house, shadowy face; shape/form factor: boxed product.",OCR,ADDS,high,"Dark red palette, haunted house and shadowy face match the box art.",ADDS
+9,Video_Games,Amazon Basics 3-Pack Stylus for Nintendo 3DS (Officially Licensed by Nintendo),"color: blue, black, red caps; material: metallic body, plastic caps; shape/form factor: slender, pointed tips; included items: three styluses; condition: new, unused.",REDUNDANT,ADDS,high,Blue/black/red caps on metallic styluses match the image.,ADDS
+10,Video_Games,Final Fantasy XI: Seekers of Adoulin [Download],MISMATCH,OCR,SUSPECT,high,False MISMATCH: the image is the Seekers of Adoulin logo for the titled download.,SUSPECT
+11,Video_Games,SAS Secure Tomorrow - PC,"mood/theme: intense, tactical; art style: realistic, gritty; characters or scene shown: soldier in gas mask holding rifle; target audience cues: mature 17+; color: dark blues, greys, metallic tones.",OCR,ADDS,high,Gas-masked soldier with rifle and dark blue palette match the cover.,ADDS
+12,Video_Games,eForCity 3 Pack of Plastic Stylus (Stylo Styli Styrograph) for Nintendo DS (handheld video game system),"color: gray
+material: plastic
+shape/form factor: elongated, pointed tips with clip-like ends
+included items: three identical styluses
+condition: new, unused",ADDS,ADDS,high,"Gray colour is new; the rest repeats ""3 pack plastic"".",ADDS
+13,Video_Games,Sid Meier's Alpha Centauri - PC,"art style: sci-fi space; scene shown: planet with sunrise, silhouetted faces; mood/theme: futuristic, cosmic; target audience cues: E rating, strategy game genre.",OCR,ADDS,high,Planet sunrise and faint silhouetted faces match the cover.,ADDS
+14,Video_Games,SpongeBob SquarePants: The Battle for Bikini Bottom,"color: vibrant yellow, green, blue; art style: cartoonish, 2D; characters shown: SpongeBob in military gear; mood/theme: playful, action-oriented; target audience cues: E rating, child-friendly design.",OCR,ADDS,high,SpongeBob in military helmet and saluting pose match the cover.,ADDS
+15,Video_Games,"Suncala 128MB Memory Card for Playstation 2, High Speed Memory Card for Sony PS2","color: black card, red/white packaging. shape/form factor: rectangular, plastic casing. condition: new, sealed in blister pack. target audience cues: gaming enthusiasts.",OCR,ADDS,high,Black card in red/white blister pack matches the image.,ADDS
+16,Video_Games,Rome: Total War - PC,"color: red, gold, and dark tones; shape/form factor: standard game box; art style: dramatic, historical warfare; characters or scene shown: Roman soldier in battle; mood/theme: epic, intense conflict.",OCR,ADDS,high,Red/gold palette and Roman soldier match the box.,ADDS
+17,Video_Games,Deception IV: Blood Ties - PlayStation Vita,"art style: anime; characters or scene shown: female character with silver hair, skeletal tombstones, mechanical elements; mood/theme: dark, gothic, mysterious; target audience cues: mature 17+",OCR,ADDS,high,"Silver-haired girl, tombstones and mechanical elements match the cover.",ADDS
+18,Video_Games,Hyperkin HD Cable for Wii,"color: black
+shape/form factor: rectangular adapter with two cables
+included items: HDMI connector, older-style video connector
+material: plastic casing, rubberized cable sheathing",SUSPECT,ADDS,high,Black adapter with HDMI plug and Wii AV connector matches the image.,ADDS
+19,Video_Games,Shadow Man,"color: pink and transparent
+shape/form factor: cylindrical with rounded base
+mood/theme: gentle, minimalist
+target audience cues: children or young adults",SUSPECT,SUSPECT,high,Known wrong image (pink humidifier); model described it instead of answering MISMATCH.,SUSPECT
+20,Video_Games,Sony Playstation: Playstation Console Shaped Messenger Bag,"color: silver; material: synthetic leather; shape/form factor: rectangular with circular front panel; included items: adjustable shoulder strap; mood/theme: retro gaming; target audience cues: gamers, collectors.",ADDS,ADDS,high,"Silver PlayStation-shaped bag with strap matches; ""synthetic leather"" is a guess.",ADDS
+21,Video_Games,PlayStation 4 Killzone Launch Day Bundle,"color: black  
+shape/form factor: rectangular console, ergonomic controller  
+included items: console, controller, game, digital card  
+mood/theme: gaming, action-adventure  
+target audience cues: gamers, console enthusiasts",REDUNDANT,ADDS,high,"Black console, controller, game case and PS Plus card match the image.",ADDS
+22,Video_Games,Microsoft Xbox 360 Game System HDMI Console 60GB,"color: white; shape/form factor: vertical console with integrated controller; included items: controller; material: plastic; mood/theme: clean, minimalist.",ADDS,ADDS,low,"White console and controller are correct; ""integrated controller"" is wrong wording (low confidence).",ADDS
+23,Video_Games,Fullmetal Alchemist 2: Curse of the Crimson Elixir - PlayStation 2,"art style: anime; characters or scene shown: blonde-haired protagonist with armored shoulder, armored figure in background; mood/theme: intense, dramatic; target audience cues: Teen rating.",OCR,ADDS,high,Blonde protagonist with automail and armored figure match the cover.,ADDS
+24,Video_Games,Nintendo 2DS-White/Pink with Bonus Disney Magical World Carrying Case (Used),"color: pink and white. shape/form factor: handheld console with screen and buttons. included items: carrying case. art style: cartoonish. characters or scene shown: Mickey Mouse. mood/theme: playful, child-friendly. target audience cues: children. condition: used.",REDUNDANT,REDUNDANT,low,"Pink/white, carrying case and used state are already in the title; only Mickey is new (low confidence).",REDUNDANT
+25,Video_Games,WWF Smackdown!,"color: blue-toned; art style: digital collage with grid overlay; characters or scene shown: wrestlers in dynamic poses; mood/theme: intense, action-oriented; target audience cues: teen-rated.",OCR,ADDS,high,Blue grid collage with wrestlers matches the cover.,ADDS
+26,Video_Games,Chu Chu Rocket,"color: green circuit board, black casing, wooden surface
+shape/form factor: cartridge-style
+included items: screw
+condition: open, partially disassembled",GENERIC,ADDS,high,"Opened GBA cartridge, green PCB, screw and wooden surface match the photo.",ADDS
+27,Video_Games,Shadowbane - PC/Mac,"color: blue-toned; art style: fantasy illustration; characters or scene shown: muscular horned creature holding sword; mood/theme: dark, epic; target audience cues: teen rating.",OCR,ADDS,high,Blue horned creature holding a sword matches the box.,ADDS
+28,Video_Games,Rayman 3: Hoodlum Havoc,"art style: cartoonish, vibrant; characters shown: orange-haired protagonist, red-gloved hand, floating objects; mood/theme: adventurous, chaotic; target audience cues: E rating, playful design.",OCR,ADDS,high,"Rayman, red fist and vibrant cartoon style match the cover.",ADDS
+29,Video_Games,Microsoft CWT-00001 Xbox Controller + Wireless Adapter for Windows,"color: black
+shape/form factor: ergonomic controller with circular analog sticks and directional pad
+included items: wireless adapter
+material: plastic with matte finish",REDUNDANT,ADDS,low,Black colour is new; controller + adapter repeats the title (low confidence).,ADDS
+30,Video_Games,Mega Man Legends - PlayStation,"color: vibrant yellow, red, blue; material: plastic case; shape/form factor: standard CD case; art style: cartoonish; characters or scene shown: Mega Man and a young boy; mood/theme: energetic, adventurous.",GENERIC,ADDS,high,Yellow/red/blue Mega Man art in a CD case matches the photo.,ADDS
+31,Video_Games,Ologymart Two 2 Controllers Bundle Compatible with Super Nintendo SNES Bulk Packaging Pack Of 2,"color: silver with purple buttons; shape/form factor: handheld controllers with directional pad and action buttons; included items: two controllers with black cables; condition: new, unused.",REDUNDANT,ADDS,high,Gray controllers with purple buttons and black cables match the image.,ADDS
+32,Video_Games,Metal Gear Solid,color: white and black; shape/form factor: standard PlayStation game case; mood/theme: tactical espionage; target audience cues: mature rating; art style: minimalist text-based design.,OCR,ADDS,high,White minimalist text-based cover matches the image.,ADDS
+33,Video_Games,Animal Crossing: City Folk (Nintendo Selects),"art style: cartoonish, vibrant; characters or scene shown: two children, townsfolk, school bus, trees, houses; mood/theme: cheerful, community-oriented; target audience cues: family-friendly, E rating.",OCR,ADDS,high,"Children, school bus, trees and houses match the cover.",ADDS
+34,Video_Games,Shadow Hearts - PlayStation 2,"mood/theme: dark, gothic, mysterious. art style: stylized, fantasy. characters or scene shown: central figure holding two others, ghostly face, castle silhouette. target audience cues: mature content rating.",OCR,ADDS,high,"Central figure carrying another, ghostly face and castle match the cover.",ADDS
+35,Video_Games,Deadly Premonition - Xbox 360,"mood/theme: horror, suspenseful
+art style: gritty, cracked texture, dark tones
+characters or scene shown: screaming face, shadowy figure with axe
+target audience cues: M rating, mature content warning",OCR,ADDS,high,Screaming face and shadowy figure match the cover.,ADDS
+36,Video_Games,Tom Clancy's Rainbow Six,"mood/theme: intense, tactical; art style: gritty, realistic; characters or scene shown: soldier aiming gun in dim, architectural setting; target audience cues: teen; condition: new.",ADDS,ADDS,high,"Soldier aiming a gun in a dim hall matches the cover; ""condition: new"" is unsupported.",ADDS
+37,Video_Games,E.T. the Extra-Terrestrial,"color: red, blue, gray; material: cardboard, plastic; shape/form factor: rectangular cartridge; included items: manual; art style: illustrated; characters or scene shown: alien and child; mood/theme: sci-fi adventure; target audience cues: children; condition: used.",ADDS,ADDS,high,"Box, cartridge, manual and alien-with-child art match the image.",ADDS
+38,Video_Games,Dungeons & Dragons Tactics - Sony PSP,"color: dark brown, green, silver; shape/form factor: rectangular cases, circular disc; included items: two cases, one disc; art style: fantasy illustration; characters or scene shown: dragons confronting; mood/theme: epic, mythical; target audience cues: teen rating.",GENERIC,ADDS,high,"Two cases, UMD disc and dragon art match the image.",ADDS
+39,Video_Games,The Simpsons: Bart vs. the World,"art style: cartoonish, vibrant; characters or scene shown: Bart Simpson central, surrounded by global landmarks; mood/theme: adventurous, comedic; target audience cues: children, fans of animated series.",ADDS,ADDS,high,Bart in the centre with world landmarks matches the cover.,ADDS
+40,Video_Games,Conflict: Desert Storm 2 Back to Baghdad - Xbox,"color: green case, desert orange backdrop. shape/form factor: standard Xbox game case. art style: realistic military scene. mood/theme: intense combat. target audience cues: Teen rating. condition: clean, unopened.",OCR,ADDS,high,Green Xbox case with desert soldier scene matches the photo.,ADDS
+41,Video_Games,Divinity: Original Sin - Multiple (Windows and Mac): select platform(s) Standard Edition,"art style: fantasy illustration; characters shown: two armored figures; mood/theme: epic, adventurous; target audience cues: mature 17+; included items: two companions, source hunter pack.",OCR,ADDS,low,"Two armored figures are correct; ""two companions, source hunter pack"" is copied from box text (low confidence).",ADDS
+42,Video_Games,Max Payne 3,"color: warm tones, yellow-orange hues. material: plastic case and disc. shape/form factor: standard PS3 game case. included items: disc, case. art style: gritty, action-oriented. mood/theme: intense, gritty urban action. condition: clean, unopened.",GENERIC,ADDS,low,"Open PS3 case with disc and warm palette are correct; ""unopened"" contradicts the photo (low confidence).",SUSPECT
+43,Video_Games,Paper Mario: The Thousand-Year Door,"art style: cartoonish, vibrant; characters shown: Mario and companions in dynamic pose; mood/theme: adventurous, playful; target audience cues: family-friendly, E rating; shape/form factor: game cartridge for Nintendo GameCube.",OCR,ADDS,high,"Mario and companions are correct; ""cartridge"" is wrong for a GameCube disc (minor).",ADDS
+44,Video_Games,Twisted Lands: Insomniac - Collector's Edition Bonus Pack,"mood/theme: eerie, suspenseful; art style: 3D rendered, cinematic; characters or scene shown: woman in foreground, haunted mansion with lightning; target audience cues: teen rating; shape/form factor: DVD case.",OCR,ADDS,high,Woman in the foreground and haunted mansion with lightning match the cover.,ADDS
+45,Video_Games,SVC Chaos - SNK vs Capcom,"art style: anime-inspired; characters or scene shown: two fighters in dynamic combat pose; mood/theme: intense, action-packed; target audience cues: youth, gaming enthusiasts.",SUSPECT,ADDS,high,Two anime fighters in close combat match the cover.,ADDS
+46,Video_Games,O-Games 209635 Jewel Time Deluxe -Nintendo DS,"color: vibrant blues, purples, and sparkles.  
+art style: glossy, sparkling gem-themed illustration.  
+mood/theme: energetic, playful, game-focused.  
+target audience cues: E rating, handheld gaming.",OCR,ADDS,high,Blue/purple sparkling gem art matches the cover.,ADDS
+47,Video_Games,Pitfall: The Lost Expedition - PlayStation 2,"color: warm orange and brown tones. shape/form factor: rectangular box and circular disc. included items: box, disc, manual. art style: adventurous, jungle-themed illustration. mood/theme: exploratory, action-packed.",OCR,ADDS,high,"Box, disc and orange jungle artwork match the photo.",ADDS
+48,Video_Games,Castlevania: Legacy of Darkness,"mood/theme: eerie, gothic, dark fantasy. art style: stylized, illustrative, 3D-rendered. characters or scene shown: humanoid figure, skeletal remains, moonlit castle backdrop. target audience cues: T-rated, Nintendo 64.",OCR,ADDS,high,"Monster figure, skeleton and moonlit castle match the cover.",ADDS
+49,Video_Games,I Spy Universe - Nintendo DS,"art style: cosmic, vibrant, surreal; scene shown: rocket soaring through galaxy with floating objects; mood/theme: adventurous, playful; target audience cues: children, educational.",OCR,ADDS,high,Rocket flying through space with floating objects matches the cover.,ADDS
+50,Video_Games,Rollercoaster Tycoon 3 - PC,"color: vibrant, multicolored; shape/form factor: CD-ROM case; art style: cartoonish, dynamic; characters or scene shown: excited person, roller coaster; mood/theme: thrilling, playful; target audience cues: family-friendly, gaming.",OCR,ADDS,high,Screaming rider and roller coaster match the box.,ADDS
+51,Arts_Crafts_and_Sewing,Spectrum Noir 96-pen SET Brights Lights Pastels Darks Next Generation Alcohol Ink Markers Pens Refillable,MISMATCH,SUSPECT,SUSPECT,high,False MISMATCH: four 24-marker Spectrum Noir sets = the titled 96-pen set.,SUSPECT
+52,Arts_Crafts_and_Sewing,"DMC U1541 Embroidery Tracing Paper, Yellow/Blue, 2-Pack",color: yellow and blue; material: wax-free; shape/form factor: sheets; included items: two sheets; mood/theme: crafting; target audience cues: embroidery enthusiasts.,OCR,OCR,high,Wax-free and sheet count are read from the package; yellow/blue repeats the title.,OCR
+53,Arts_Crafts_and_Sewing,Turquoise Gem Round Beads 4mm / 16 Inch Strand,"color: teal; shape/form factor: round; included items: multiple strands; condition: new, polished, uniform.",REDUNDANT,REDUNDANT,high,"Teal round beads restate ""turquoise round beads"".",REDUNDANT
+54,Arts_Crafts_and_Sewing,"The Crafters Workshop TCW-252 Template, 12 by 12-Inch, Aspen Trees","art style: abstract, high-contrast black and white; mood/theme: serene forest; characters or scene shown: stylized birch trees with intricate bark patterns; shape/form factor: vertical strips.",REDUNDANT,ADDS,low,High-contrast black-and-white stencil style is new; trees repeat the title (low confidence).,ADDS
+55,Arts_Crafts_and_Sewing,"Jaybird Night Sky Quilt, Multi Colored","color: vibrant multicolored stars on dark background. shape/form factor: quilt with star-shaped patches. art style: geometric, quilted. mood/theme: bold, playful, celestial.",REDUNDANT,ADDS,high,Multicoloured star blocks on a dark background are new visual detail.,ADDS
+56,Arts_Crafts_and_Sewing,ArtResin - Epoxy Resin - Clear - Non-Toxic - 1 gal (0.5 gal Resin + 0.5 gal Hardener) (3.78L),"color: translucent white; shape/form factor: gallon jugs with handles; included items: two jugs; art style: colorful heart graphic; mood/theme: creative, craft-oriented.",REDUNDANT,ADDS,high,Translucent jugs with handles and heart logo match the image.,ADDS
+57,Arts_Crafts_and_Sewing,"American Crafts 340272 Sticky Thumb Foam DT ASST, White Dots, Assorted Sizes","color: white dots on light blue background; material: foam; shape/form factor: circular dots arranged in grid; included items: 275 dots; art style: minimalist; mood/theme: crafty, adhesive.",OCR,OCR,low,"""275 dots"" is transcribed from the card; the rest restates the title (low confidence).",OCR
+58,Arts_Crafts_and_Sewing,"Sizzix, Multi Color, Embossing Folder , Snowfall Speckles by Tim Holtz, One Size","color: light blue with black speckles; shape/form factor: rectangular folder; art style: textured, speckled; mood/theme: frosty, delicate; target audience cues: crafters, scrapbookers.",OCR,ADDS,high,Light blue folder with dark speckles matches the image.,ADDS
+59,Arts_Crafts_and_Sewing,Aurifil Thread Set Classic Collection 50wt Cotton 12 Large (1422 yard) Spools,"color: multicolored spools; material: cotton; shape/form factor: spools in clear plastic case; included items: 12 spools; art style: ballet shoes; mood/theme: crafty, organized; target audience cues: sewers, crafters.",OCR,ADDS,high,Multicoloured spools in a clear case and ballet-shoe lid art match the image.,ADDS
+60,Arts_Crafts_and_Sewing,Mandala Dotting Tools for Painting Rocks Mandala Painting Dotting Stencil Dot Mandala Kit 33PCS,"color: green, pink, orange, blue, purple, silver.  
+material: plastic, metal.  
+shape/form factor: cylindrical, spherical, flat stencils.  
+included items: brushes, tools, stencils, palette.  
+art style: mandala, geometric.",GENERIC,ADDS,high,"Coloured dotting tools, stencils and palette match the image.",ADDS
+61,Electronics,Fotodiox Pro Lens Mount Adapter Compatible with Pentax 6x7 Lenses to Pentax K-Mount Cameras,"color: black and silver; material: metal and plastic; shape/form factor: cylindrical adapter with threaded ends; condition: new, clean, studio-lit.",REDUNDANT,ADDS,high,Black and silver cylindrical adapter body is new visual detail.,ADDS
+62,Electronics,Monoprice VGA to RCA Adapter PC to TV Video Converter- Blue,"color: blue
+shape/form factor: compact rectangular device
+material: plastic casing
+mood/theme: functional electronic gadget
+target audience cues: general consumers needing video conversion",SUSPECT,REDUNDANT,low,Blue is in the title; compact plastic box is the only addition (low confidence).,REDUNDANT
+63,Electronics,Audio-Technica ATH-M40x Renewed,"color: black  
+material: leather-like padding, plastic frame  
+shape/form factor: over-ear, foldable  
+condition: renewed (implied by context)",REDUNDANT,ADDS,high,Black colour and padded over-ear form are new.,ADDS
+64,Electronics,"MasiBloom Silicone Case for AirTag 2021 Holder Accessories with Keychain Ring Protective Skin Cover (Turquoise Blue, for AirTag)","color: turquoise blue
+material: silicone
+shape/form factor: circular with keychain ring
+included items: keychain ring, silicone holder
+mood/theme: minimalist, functional",REDUNDANT,REDUNDANT,high,"Turquoise, silicone and keychain ring all restate the title.",REDUNDANT
+65,Electronics,Importer520 New Gold Plated Hdmi Female to Dvi-d Male Video Adaptor,MISMATCH,SUSPECT,MISMATCH_OK,high,Known wrong image (white earphones for an HDMI-DVI adapter); MISMATCH is correct.,MISMATCH_OK
+66,Electronics,"Planar Helium PCT2235 Touch Screen 22"" LED LCD Full HD Resolution Monitor with Helium Stand,black","color: black; shape/form factor: flat screen; art style: modern retail UI; characters or scene shown: blurred male figure; mood/theme: sophisticated urban; target audience cues: gentlemen, fashion-conscious.",GENERIC,GENERIC,high,"Describes on-screen demo content and infers audience from screen text, not the monitor itself.",GENERIC
+67,Electronics,"Samsung UE510 LED Display Monitor, Black, 28"" 4K (Renewed)","color: black frame, silver stand; shape/form factor: monitor with stand; art style: aerial cityscape at night; mood/theme: vibrant, modern urban; condition: renewed (implied by title).",GENERIC,ADDS,low,Silver stand is new; cityscape is screen demo content (low confidence).,ADDS
+68,Electronics,Transcend USB 3.1/3.0 Super Speed Type-C Multi-Card Reader for SDHC/SDXC/MS/CF (TS-RDC8K),"color: black
+shape/form factor: rectangular, compact
+material: plastic
+mood/theme: functional, tech-oriented",OCR,ADDS,low,Black compact reader colour is not in the title (low confidence).,ADDS
+69,Electronics,"Lenovo Speaker M0520, Black ( 888010120 )","color: black  
+shape/form factor: spherical with circular speaker opening  
+included items: two units  
+material: glossy plastic  
+mood/theme: modern, minimalist",REDUNDANT,ADDS,high,Spherical glossy two-unit form is new; black repeats the title.,ADDS
+70,Electronics,"LG 43UN700T-B 43"" 4K UHD 3840x2160 IPS USB-C HDR 10 Monitor","color: black frame, vibrant display content; shape/form factor: widescreen monitor with stand; art style: scenic landscapes, data charts; mood/theme: professional, immersive viewing.",GENERIC,GENERIC,high,"Mostly describes screen demo content (landscapes, charts) rather than the monitor.",GENERIC
+71,Home_and_Kitchen,"FoodWorks Silicone Ice Pop Maker Molds/Popsicle Molds, Set of 6","color: blue, orange, purple, green, yellow, red; material: silicone; shape/form factor: cylindrical with rounded ends; included items: six molds; art style: clean, studio-lit product shot.",GENERIC,ADDS,high,Six listed colours match the molds.,ADDS
+72,Home_and_Kitchen,Tattler Reusable Wide Mouth Canning Lids & Rubber Rings-12/pkg,"color: white and reddish-brown; shape/form factor: circular lid and ring; included items: one lid, one ring; condition: new, unused.",GENERIC,ADDS,high,White lid and reddish rubber ring match the image.,ADDS
+73,Home_and_Kitchen,Glass Soap Pump Dispenser Floral and Butterfly 17 Ounce by A Ting,"color: pastel pink, yellow, green; material: glass, metal pump; shape/form factor: rounded bottle; art style: botanical illustration; characters or scene shown: roses, butterfly; mood/theme: delicate, nature-inspired.",REDUNDANT,ADDS,high,"Pink/yellow roses, butterfly and silver pump match the image.",ADDS
+74,Home_and_Kitchen,Extreme Freeze Reditainer 64 oz. Freezeable Deli Food Containers w/ Lids - Package of 8 - Food Storage,"color: white
+material: plastic
+shape/form factor: cylindrical with lid
+included items: one container (implied by singular image)
+condition: new, unused",REDUNDANT,REDUNDANT,low,White round plastic container adds little beyond the title (low confidence).,REDUNDANT
+75,Home_and_Kitchen,"Totally Bamboo Barkeeper's Salt Box, Margarita Salt Rimmer for Cocktail Drinks, Home Bar Accessory with Magnetic Swivel Lid","material: bamboo; shape/form factor: round, lidded container; included items: coarse salt; condition: clean, unused; mood/theme: minimalist, functional.",REDUNDANT,ADDS,low,Round lidded box holding coarse salt is new; bamboo repeats the title (low confidence).,ADDS
+76,Home_and_Kitchen,"Hamilton Beach Air Circulator, 16-Inch, Two Tone Gray","color: gray; shape/form factor: circular fan with stand; material: plastic; condition: new, unused.",REDUNDANT,REDUNDANT,high,"Gray circular fan on a stand restates ""air circulator, two tone gray"".",REDUNDANT
+77,Home_and_Kitchen,"KUHEE Air Mattress with Built in Pump, Queen air Mattress, Easy Inflation/Deflation,Comfortable Top Surface-Blow Up Airbed,Overheating Protection,80x60x18in,600lb MAX,Grey","color: white and grey; shape/form factor: rectangular inflatable; characters or scene shown: person lying relaxed; mood/theme: comfortable, restful; condition: inflated and used.",REDUNDANT,ADDS,high,"White/grey bed with a person lying on it matches; ""used"" is unsupported.",ADDS
+78,Home_and_Kitchen,Black Finish Wooden Cheval Bedroom Free Standing Floor Mirror,"color: black  
+material: wood  
+shape/form factor: cheval mirror, floor-standing, tripod base  
+mood/theme: minimalist, modern  
+target audience cues: bedroom, home decor",REDUNDANT,REDUNDANT,high,Black wooden floor-standing cheval mirror restates the title.,REDUNDANT
+79,Home_and_Kitchen,"KINGWILLOW Woven Rectangular Wicker Storage Basket,Small Organizer Box","color: white with floral pattern  
+material: woven wicker  
+shape/form factor: rectangular  
+mood/theme: rustic, vintage  
+condition: new, clean",ADDS,ADDS,high,White basket with floral fabric liner is new visual detail.,ADDS
+80,Home_and_Kitchen,Red Co. Glass Salt and Pepper Shaker Set in 5” Metal Carrying Toolbox Caddy with Wooden Handle,"color: metallic gray, clear glass, wooden handle
+material: metal, glass, wood
+shape/form factor: rectangular caddy with handle
+included items: two shakers
+mood/theme: rustic, utilitarian
+condition: distressed, vintage-style",REDUNDANT,ADDS,high,Galvanized gray corrugated caddy and glass shakers match the image.,ADDS
+81,Movies_and_TV,Motherless Brooklyn (Blu-ray + Digital),"color: blue, black, gray, white; art style: cinematic, noir-inspired; characters or scene shown: man walking on bridge, four portraits above; mood/theme: mysterious, dramatic.",OCR,ADDS,high,Man walking on a bridge under cast portraits matches the cover.,ADDS
+82,Movies_and_TV,Oliver!,MISMATCH,OCR,SUSPECT,high,False MISMATCH: the image is the Oliver! DVD cover.,SUSPECT
+83,Movies_and_TV,Patton / The Longest Day / The Sand Pebbles / Tora! Tora! Tora! [Blu-ray],MISMATCH,OCR,SUSPECT,high,False MISMATCH: the image is the four-film Patton/Longest Day/Sand Pebbles/Tora Blu-ray.,SUSPECT
+84,Movies_and_TV,Deepwater Horizon [DVD],"mood/theme: intense, dramatic, action-packed.  
+characters or scene shown: man in foreground, burning oil rig in background.  
+art style: realistic, cinematic.  
+shape/form factor: DVD case.",OCR,ADDS,high,Man in the foreground with a burning oil rig matches the cover.,ADDS
+85,Movies_and_TV,"What's Up, Doc? (DVD) (Rpkg)",MISMATCH,OCR,SUSPECT,high,"False MISMATCH: the image is the What's Up, Doc? cover.",SUSPECT
+86,Movies_and_TV,The Hunt for Red October,"color: blue, black, white; art style: dramatic, cinematic; characters or scene shown: two men, submarine in ocean; mood/theme: suspenseful, naval thriller; target audience cues: adult viewers.",OCR,ADDS,high,Two men above a surfacing submarine match the cover.,ADDS
+87,Movies_and_TV,Batman: Assault on Arkham (DVD),"art style: comic book illustration; characters or scene shown: Batman looming over group of villains; mood/theme: intense, dramatic; target audience cues: superhero fans.",OCR,ADDS,high,Batman looming over a group of villains matches the cover.,ADDS
+88,Movies_and_TV,I Am Wrath Digital,MISMATCH,OCR,SUSPECT,high,False MISMATCH: the image is the I Am Wrath cover.,SUSPECT
+89,Movies_and_TV,Justice League (BD),"color: vibrant, dynamic sky backdrop; characters in detailed costumes.  
+art style: cinematic, comic-book inspired.  
+scene shown: heroes standing together on rocky terrain.  
+mood/theme: heroic, epic, action-packed.",OCR,ADDS,high,Heroes standing on rocky terrain under a dramatic sky match the cover.,ADDS
+90,Movies_and_TV,The Intern,"color: muted tones, white laptop, dark suit, polka-dot blouse.  
+shape/form factor: DVD case with disc.  
+characters or scene shown: two people smiling, seated at desk.  
+mood/theme: professional, warm, collaborative.  
+included items: DVD disc.",ADDS,ADDS,high,"Two smiling people at a desk with laptop, suit and polka-dot blouse match the cover.",ADDS
+91,Tools_and_Home_Improvement,"Drill America - GLBCOX67/64 7/64"" x 6"" Cobalt Aircraft Extension Drill Bit, GLBCO Series","color: dark metallic
+shape/form factor: cylindrical with spiral flutes
+material: cobalt alloy
+condition: new, unused",REDUNDANT,ADDS,high,Dark metallic finish and spiral flutes are new; cobalt repeats the title.,ADDS
+92,Tools_and_Home_Improvement,New Stens Air Filter 055-025 for Kohler 47 083 03-S1,"color: beige and black; shape/form factor: circular ring; material: mesh fabric and rubber seal; condition: new, unused.",REDUNDANT,ADDS,high,Beige pleated filter with black rubber rings is new visual detail.,ADDS
+93,Tools_and_Home_Improvement,"Ansen Tools AN-269 6-Inch Soft Buffing and Polishing Wheel, 2-Piece","color: off-white with orange center; material: fabric-like with stitched concentric circles; shape/form factor: circular discs; included items: two identical wheels; condition: new, unused.",ADDS,ADDS,high,Off-white stitched wheels with orange centres are new visual detail.,ADDS
+94,Tools_and_Home_Improvement,F Connector Installation & Removal Tool,"color: black; material: plastic; shape/form factor: U-shaped with textured grip; condition: new, unused.",REDUNDANT,ADDS,high,Black textured plastic tool body is new visual detail.,ADDS
+95,Tools_and_Home_Improvement,"Goldblatt Folding Drywall Saw, Jab Saw, Hand Saw with Soft Grip Handle, Sheetrock Saw for Wallboard, Drywall, Plywood and PVC","color: red handle, black blade, silver pivot
+shape/form factor: folding, compact, handheld
+material: plastic handle, metal blade
+condition: new, unused, clean",ADDS,ADDS,high,"Red handle, black blade and silver pivot are new visual detail.",ADDS
+96,Tools_and_Home_Improvement,"35-Pack Eye Protective Safety Cover Office Pack,Includes 25 Disposable Eye Shield Lenses per Pack and 10 Frames(Multicolor),Suitable for Meeting,Communication,Anti-Dropping","color: multicolored frames, clear lenses; shape/form factor: protective shield design; included items: frames and lenses; condition: new, unused.",ADDS,REDUNDANT,high,Multicolour frames and clear lenses restate the title.,REDUNDANT
+97,Tools_and_Home_Improvement,Klein Tools 69445 Magnetic Hanger Without Strap for Klein Tools Clamp Meters and Multimeters with Powerful Rare Earth Magnets,"color: black
+material: textured plastic
+shape/form factor: rectangular with rounded edges and a hole for hanging
+condition: new, unused",SUSPECT,ADDS,high,Black textured plastic body with a hanging hole is new visual detail.,ADDS
+98,Tools_and_Home_Improvement,Kreg KMA4100 Crosscut Station,"color: blue and brown; material: plastic, wood, metal; shape/form factor: rectangular workbench with adjustable guide; included items: clamps, guide rails, white knobs.",REDUNDANT,ADDS,high,"Blue base, brown board, rails and clamps match the image.",ADDS
+99,Tools_and_Home_Improvement,"5/8"" Stainless Steel Wire Brush for Power Drill Impact Driver - Hex Shank By Protool","color: silver-gray  
+material: stainless steel wire  
+shape/form factor: cylindrical brush head with hex shank handle  
+condition: new, unused",REDUNDANT,REDUNDANT,high,Stainless wire brush with hex shank restates the title; only silver-gray is added.,REDUNDANT
+100,Tools_and_Home_Improvement,COOMYXIN Power Inverter Compatible with makita 18v Battery Turn DC 20V to AC 110V/150W Power Station,color: teal and black. shape/form factor: rectangular with handle. included items: two batteries. material: plastic. mood/theme: utilitarian.,REDUNDANT,ADDS,high,Teal/black inverter with handle and two batteries matches the image.,ADDS

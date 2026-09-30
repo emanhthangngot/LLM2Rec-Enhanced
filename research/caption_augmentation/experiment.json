@@ -1,6 +1,6 @@
 {
-  "schema_version": "2026-09-15.1",
-  "plan": "plans/260915-0955-visual-delta-fusion-pilot/plan.md",
+  "schema_version": "2026-09-28.2",
+  "plan": "plans/260928-0043-qwen3vl-v10-caption-retraining/plan.md",
   "arms": ["title-only", "null", "real", "shuffle", "paraphrase"],
   "primary_cue_cap_tokens": 32,
   "cue_cap_sensitivities_tokens": [16, 64],
@@ -11,16 +11,17 @@
     "shuffle_seed_by_chain": {"2024": 7001, "2025": 7002, "2026": 7003}
   },
   "captioner": {
-    "model_id": "microsoft/Florence-2-large",
-    "task_prompt": "<CAPTION>",
-    "max_new_tokens": 128,
-    "num_beams": 3,
+    "model_id": "Qwen/Qwen3-VL-4B-Instruct",
+    "input_condition": "image + original title",
+    "prompt_template": "You see a product image from an online store. The product title is: \"{title}\".\nDescribe ONLY visual information that is NOT already stated in the title.\nDo not repeat or transcribe any words printed on the product, box, or cover.\nAnswer in at most 40 words as \"key: value\" pairs, choosing only relevant keys from:\ncolor, material, shape/form factor, included items, art style, characters or scene shown, mood/theme, target audience cues, condition.\nIf the image clearly shows a different kind of product than the title, answer exactly: MISMATCH.",
+    "max_new_tokens": 96,
     "do_sample": false,
     "attn_implementation": "sdpa",
-    "flash_attn_static_scan_patch": "transformers.dynamic_module_utils.get_imports is scoped-patched during from_pretrained to drop the string 'flash_attn' from the returned requirement list. Evidence-backed, not assumed: the remote modeling_florence2.py imports flash_attn only inside `if is_flash_attn_2_available():` guards and dispatches attention via `FLORENCE2_ATTENTION_CLASSES[config._attn_implementation]`; attn_implementation is pinned to sdpa above so that branch never executes. Kaggle's T4 (sm_75) and P100 (sm_60) are both below FlashAttention-2's sm_80 requirement, so installing flash_attn is not a viable alternative. See ISSUES.md #12.",
-    "resolved_revision": "f0acedbf9b780e04fe1f9111fcf53187388f3d03",
-    "resolved_revision_fallback": "21a599d414c4d928c9032694c424fb94458e3594",
-    "resolved_revision_note": "primary = last commit before the 2024-12-08 continued-pretrain weight swap (original FLD-5B weights, matches published benchmark table, no 'might not be trained well' card caveat). fallback = current main (continued-pretrained, card-flagged); use only if primary fails to load and report the caveat explicitly. See ISSUES.md #7."
+    "image_max_side": 768,
+    "mismatch_policy": "Preserve the row and raw MISMATCH output; mark caption_status=mismatch and use unavailable in all caption-dependent arms.",
+    "resolved_revision": null,
+    "processor_revision": null,
+    "revision_resolution": "Resolve once from Hugging Face model_info; store the immutable model and processor revisions in every run identity."
   },
   "paraphraser": {
     "model_id": "Qwen/Qwen2.5-3B-Instruct",
@@ -36,7 +37,12 @@
   },
   "runtime": {
     "transformers": "4.44.2",
-    "note": "proven pin already used across this research family's completed Kaggle CSFT/IEM/visual-signal runs; see experiments/multimodal_llm_rs/kaggle/llm2rec-visual/visual_signal.py ensure_runtime_dependencies"
+    "scope": "LLM2Rec training runtime only; do not load Qwen3-VL here."
+  },
+  "caption_runtime": {
+    "transformers": ">=4.57.0,<5",
+    "torch": "Use the Kaggle image's preinstalled build; do not upgrade.",
+    "scope": "Qwen3-VL caption generation only; isolated from training."
   },
   "budget": {
     "gpu_hours_cap": 30,
@@ -56,10 +62,58 @@
     "late-text", "csft-only", "native-title",
     "real-cap16", "real-cap64"
   ],
+  "profile_definitions": {
+    "title-only": {
+      "csft_cue_arm": "title-only", "representation_cue_arm": "title-only",
+      "history_policy": "common-suffix", "cue_cap_tokens": 32
+    },
+    "null": {
+      "csft_cue_arm": "null", "representation_cue_arm": "null",
+      "history_policy": "common-suffix", "cue_cap_tokens": 32
+    },
+    "real": {
+      "csft_cue_arm": "real", "representation_cue_arm": "real",
+      "history_policy": "common-suffix", "cue_cap_tokens": 32
+    },
+    "shuffle": {
+      "csft_cue_arm": "shuffle", "representation_cue_arm": "shuffle",
+      "history_policy": "common-suffix", "cue_cap_tokens": 32
+    },
+    "paraphrase": {
+      "csft_cue_arm": "paraphrase", "representation_cue_arm": "paraphrase",
+      "history_policy": "common-suffix", "cue_cap_tokens": 32
+    },
+    "late-text": {
+      "csft_cue_arm": "title-only", "representation_cue_arm": "real",
+      "history_policy": "common-suffix", "cue_cap_tokens": 32
+    },
+    "csft-only": {
+      "csft_cue_arm": "real", "representation_cue_arm": "title-only",
+      "history_policy": "common-suffix", "cue_cap_tokens": 32
+    },
+    "native-title": {
+      "csft_cue_arm": "real", "representation_cue_arm": "real",
+      "history_policy": "native-full-history", "cue_cap_tokens": null
+    },
+    "real-cap16": {
+      "csft_cue_arm": "real", "representation_cue_arm": "real",
+      "history_policy": "common-suffix", "cue_cap_tokens": 16
+    },
+    "real-cap64": {
+      "csft_cue_arm": "real", "representation_cue_arm": "real",
+      "history_policy": "common-suffix", "cue_cap_tokens": 64
+    }
+  },
   "quality_gates": {
     "image_coverage_minimum": 0.95,
     "paraphrase_fidelity_minimum": 0.95,
-    "caption_unsupported_attribute_maximum": 0.10
+    "caption_unsupported_attribute_maximum": 0.10,
+    "qwen3vl_structured_pilot": {
+      "label_count": 100,
+      "adds_minimum": 40,
+      "ocr_or_repetition_maximum": 20,
+      "suspect_maximum": 10
+    }
   },
   "archive": {
     "sha256": "79e212348a411378f282d22a707810203d0e5fdc1938c9a175e76c4247dbb934",
@@ -70,5 +124,5 @@
     "Arts_Crafts_and_Sewing", "Electronics", "Home_and_Kitchen",
     "Video_Games", "Movies_and_TV", "Tools_and_Home_Improvement"
   ],
-  "resolved_revisions_note": "revisions above were resolved from live HF API/commit-history evidence on 2026-09-15 (see ISSUES.md #7); real-runtime load must still be verified in the Kaggle smoke run before corpus generation."
+  "resolved_revisions_note": "Qwen3-VL model and processor revisions are resolved from Hugging Face model_info in the pre-run smoke and recorded by immutable SHA; full corpus generation remains blocked until all 100 structured pilot labels pass the gate above."
 }

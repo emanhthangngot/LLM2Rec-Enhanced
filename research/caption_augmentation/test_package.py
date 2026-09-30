@@ -9,11 +9,11 @@ from __future__ import annotations
 
 import ast
 import json
+import tempfile
 import unittest
 from pathlib import Path
 
-from package import NOTEBOOK_STAGE_CELLS, _strip_local_imports, notebook_source
-
+from package import NOTEBOOK_STAGE_CELLS, _strip_local_imports, notebook_source, write_kernel_package
 
 class NotebookSourceTests(unittest.TestCase):
     def test_every_registered_stage_produces_valid_notebook_json(self) -> None:
@@ -35,6 +35,13 @@ class NotebookSourceTests(unittest.TestCase):
     def test_unregistered_stage_raises(self) -> None:
         with self.assertRaises(ValueError):
             notebook_source(b"x", "not-a-real-stage")
+
+    def test_video_games_l4_smoke_skips_title_paraphrasing(self) -> None:
+        cells = NOTEBOOK_STAGE_CELLS["video_games_l4_smoke"]
+        combined = "\n".join(cells)
+        self.assertIn("select_video_games_smoke_sample()", combined)
+        self.assertIn('"paraphrases_included": False', combined)
+        self.assertNotIn("paraphraser = QwenParaphraser()", combined)
 
     def test_paraphrase_probe_3b_cells_reference_pinned_candidate_revision(self) -> None:
         # Regression: this probe must always run the exact pinned candidate
@@ -62,7 +69,9 @@ class NotebookSourceTests(unittest.TestCase):
         self.assertIn("def process_catalog_records_incrementally", combined)
         self.assertIn("def write_sharded_records", combined)
         self.assertIn("def resolve_full_catalog_metadata", combined)
-        self.assertIn("class Florence2Captioner", combined)
+        self.assertIn("class Qwen3VLCaptioner", combined)
+        self.assertIn("caption_prompt_sha256", combined)
+        self.assertNotIn("Florence2Captioner", combined)
         self.assertNotIn("from crosswalk import", combined)
         self.assertNotIn("from caption import", combined)
         self.assertNotIn("from corpus import", combined)
@@ -72,7 +81,7 @@ class NotebookSourceTests(unittest.TestCase):
             "import json\n"
             "from crosswalk import CATALOG_SIZE\n"
             "from caption import (\n"
-            "    Florence2Captioner,\n"
+            "    Qwen3VLCaptioner,\n"
             "    QwenParaphraser,\n"
             ")\n"
             "x = 1\n"
@@ -84,6 +93,26 @@ class NotebookSourceTests(unittest.TestCase):
         self.assertNotIn("from caption", stripped)
         ast.parse(stripped)
 
+
+class KernelPackageMetadataTests(unittest.TestCase):
+    def test_accelerator_and_kernel_sources_are_recorded(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            output_dir = Path(temporary) / "package"
+            write_kernel_package(
+                Path(__file__).parent,
+                output_dir,
+                "trixuanle/example",
+                "Example",
+                stage="full_corpus_generation",
+                kernel_sources=[],
+                notebook=True,
+                accelerator="NvidiaL4",
+            )
+            metadata = json.loads(
+                (output_dir / "kernel-metadata.json").read_text(encoding="utf-8")
+            )
+        self.assertEqual(metadata["machine_shape"], "NvidiaL4")
+        self.assertEqual(metadata["kernel_sources"], [])
 
 if __name__ == "__main__":
     unittest.main()

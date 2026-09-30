@@ -1,0 +1,7 @@
+{
+  "checkpoint": "/kaggle/working/csft-output/checkpoint-1000",
+  "elapsed_seconds": 16435.41268849373,
+  "model_sha256": "61a3d9c196be3b962e1d85715b917d99a5878b5600da889cddaf7ab7231fd501",
+  "resumed_from": null,
+  "status": "complete"
+}
