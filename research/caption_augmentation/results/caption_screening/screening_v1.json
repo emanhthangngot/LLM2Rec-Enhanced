@@ -1,0 +1,681 @@
+{
+  "protocol": "research/caption_augmentation/screening/protocol.md",
+  "caption_source": "Florence-2 v10",
+  "asin_join": {
+    "csv_items": 108733,
+    "asin_missing_in_catalog": 0,
+    "id_differs_from_global_id": 0
+  },
+  "train_pairs": 960757,
+  "test_pairs": 120099,
+  "primary_M": {
+    "Arts_Crafts_and_Sewing": {
+      "mode": "primary_train",
+      "items_with_caption": 12445,
+      "template_tokens_dropped": 1,
+      "positives": 98246,
+      "triples": 491230,
+      "title_tied_share": 0.5900087535370396,
+      "main_tie_share": 0.7951902839595625,
+      "auc_title": 0.6381165645420679,
+      "auc_title_ci95": [
+        0.636476599556216,
+        0.6397154845998819
+      ],
+      "auc_cap_raw": 0.5713118091321784,
+      "auc_cap_raw_ci95": [
+        0.5696830150845836,
+        0.5727928363495715
+      ],
+      "auc_cap_resid": 0.5382519390102396,
+      "auc_cap_resid_ci95": [
+        0.5370284540846447,
+        0.5395833672617715
+      ],
+      "auc_main": 0.5098264499879239,
+      "auc_main_ci95": [
+        0.5085809797802332,
+        0.5112437655719715
+      ],
+      "auc_shuffle_main": 0.502718835179243,
+      "auc_shuffle_main_ci95": [
+        0.5011272335739229,
+        0.5041365232922399
+      ]
+    },
+    "Electronics": {
+      "mode": "primary_train",
+      "items_with_caption": 20136,
+      "template_tokens_dropped": 2,
+      "positives": 183358,
+      "triples": 916790,
+      "title_tied_share": 0.6191145191374251,
+      "main_tie_share": 0.7482972103495784,
+      "auc_title": 0.5721811974388901,
+      "auc_title_ci95": [
+        0.5710654430131219,
+        0.5733130951471984
+      ],
+      "auc_cap_raw": 0.5377027454487942,
+      "auc_cap_raw_ci95": [
+        0.5366467375298596,
+        0.538841092289401
+      ],
+      "auc_cap_resid": 0.5189040020070027,
+      "auc_cap_resid_ci95": [
+        0.5180229796354673,
+        0.5198317908135996
+      ],
+      "auc_main": 0.5050828227019828,
+      "auc_main_ci95": [
+        0.5039384286093466,
+        0.5060755458125196
+      ],
+      "auc_shuffle_main": 0.5005505657172858,
+      "auc_shuffle_main_ci95": [
+        0.4993974731501578,
+        0.5017254459462249
+      ]
+    },
+    "Home_and_Kitchen": {
+      "mode": "primary_train",
+      "items_with_caption": 33471,
+      "template_tokens_dropped": 3,
+      "positives": 249538,
+      "triples": 1247690,
+      "title_tied_share": 0.7158605102228919,
+      "main_tie_share": 0.8806288150546592,
+      "auc_title": 0.5424576617589305,
+      "auc_title_ci95": [
+        0.5416258545792625,
+        0.5432403782189485
+      ],
+      "auc_cap_raw": 0.5242111421907686,
+      "auc_cap_raw_ci95": [
+        0.5234862125207383,
+        0.5249849521916502
+      ],
+      "auc_cap_resid": 0.5104424977358157,
+      "auc_cap_resid_ci95": [
+        0.5098581678942686,
+        0.5110093853441159
+      ],
+      "auc_main": 0.5028924999888039,
+      "auc_main_ci95": [
+        0.502283727188867,
+        0.5034738116927798
+      ],
+      "auc_shuffle_main": 0.5003330825417724,
+      "auc_shuffle_main_ci95": [
+        0.4995939575848427,
+        0.5010276006015375
+      ]
+    },
+    "Movies_and_TV": {
+      "mode": "primary_train",
+      "items_with_caption": 12795,
+      "template_tokens_dropped": 1,
+      "positives": 100458,
+      "triples": 502290,
+      "title_tied_share": 0.6457962531605248,
+      "main_tie_share": 0.8195988001615404,
+      "auc_title": 0.59271038643015,
+      "auc_title_ci95": [
+        0.5911384110772661,
+        0.5941498686018037
+      ],
+      "auc_cap_raw": 0.5873658643413168,
+      "auc_cap_raw_ci95": [
+        0.5858721306416611,
+        0.5888850315554759
+      ],
+      "auc_cap_resid": 0.5196888251806725,
+      "auc_cap_resid_ci95": [
+        0.5187519908817615,
+        0.5206406657508611
+      ],
+      "auc_main": 0.5172761940581484,
+      "auc_main_ci95": [
+        0.5160089299318662,
+        0.5185350217666312
+      ],
+      "auc_shuffle_main": 0.5004254309029309,
+      "auc_shuffle_main_ci95": [
+        0.4990282121352096,
+        0.5018144414179424
+      ]
+    },
+    "Tools_and_Home_Improvement": {
+      "mode": "primary_train",
+      "items_with_caption": 19865,
+      "template_tokens_dropped": 3,
+      "positives": 148912,
+      "triples": 744560,
+      "title_tied_share": 0.6940595788116471,
+      "main_tie_share": 0.8587434617788606,
+      "auc_title": 0.5611320780058021,
+      "auc_title_ci95": [
+        0.5599766304931771,
+        0.5622428682711937
+      ],
+      "auc_cap_raw": 0.5292535188567745,
+      "auc_cap_raw_ci95": [
+        0.5282206605243366,
+        0.5302870487267648
+      ],
+      "auc_cap_resid": 0.5153560492102719,
+      "auc_cap_resid_ci95": [
+        0.5145109527774793,
+        0.5161704060116041
+      ],
+      "auc_main": 0.5044342830162026,
+      "auc_main_ci95": [
+        0.5036111983220005,
+        0.5052896891982636
+      ],
+      "auc_shuffle_main": 0.4995297705551223,
+      "auc_shuffle_main_ci95": [
+        0.4986034407791648,
+        0.5005516835852789
+      ]
+    },
+    "Video_Games": {
+      "mode": "primary_train",
+      "items_with_caption": 9514,
+      "template_tokens_dropped": 1,
+      "positives": 107066,
+      "triples": 535330,
+      "title_tied_share": 0.5849999065996675,
+      "main_tie_share": 0.8291651765186737,
+      "auc_title": 0.6326210001307605,
+      "auc_title_ci95": [
+        0.6310481151812901,
+        0.6341447098051669
+      ],
+      "auc_cap_raw": 0.5663824183214092,
+      "auc_cap_raw_ci95": [
+        0.5650112780901501,
+        0.5677582519193769
+      ],
+      "auc_cap_resid": 0.523908617114677,
+      "auc_cap_resid_ci95": [
+        0.5228979554667215,
+        0.5249239020790913
+      ],
+      "auc_main": 0.5189802278649159,
+      "auc_main_ci95": [
+        0.517732791816215,
+        0.5202401276714799
+      ],
+      "auc_shuffle_main": 0.5013251673223318,
+      "auc_shuffle_main_ci95": [
+        0.5000716454122179,
+        0.5027927404759598
+      ]
+    }
+  },
+  "amendment1_M_cf": {
+    "Arts_Crafts_and_Sewing": {
+      "mode": "amendment1_test_cf",
+      "items_with_caption": 12445,
+      "template_tokens_dropped": 1,
+      "positives": 12380,
+      "triples": 61900,
+      "title_tied_share": 0.6183844911147012,
+      "main_tie_share": 0.8001201734677883,
+      "title_and_cf_tied_share": 0.6097092084006462,
+      "auc_title": 0.6107431340872375,
+      "auc_title_ci95": [
+        0.6063642972536348,
+        0.6149686995153473
+      ],
+      "auc_cap_raw": 0.548610662358643,
+      "auc_cap_raw_ci95": [
+        0.5449028675282714,
+        0.5526518578352182
+      ],
+      "auc_cap_resid": 0.5246768982229403,
+      "auc_cap_resid_ci95": [
+        0.5210169628432956,
+        0.5281431744749596
+      ],
+      "auc_main": 0.5059172370552275,
+      "auc_main_ci95": [
+        0.502304089693588,
+        0.5097272081201827
+      ],
+      "auc_shuffle_main": 0.5030957730288939,
+      "auc_shuffle_main_ci95": [
+        0.4992786641248871,
+        0.5069419853480721
+      ],
+      "auc_main_cf": 0.5054847513314432,
+      "auc_main_cf_ci95": [
+        0.5018986959505337,
+        0.5089188124646558
+      ],
+      "auc_shuffle_main_cf": 0.5032590551389735,
+      "auc_shuffle_main_cf_ci95": [
+        0.49903077113210914,
+        0.5072497984611974
+      ]
+    },
+    "Electronics": {
+      "mode": "amendment1_test_cf",
+      "items_with_caption": 20136,
+      "template_tokens_dropped": 2,
+      "positives": 23021,
+      "triples": 115105,
+      "title_tied_share": 0.6113548499196386,
+      "main_tie_share": 0.7437686514139548,
+      "title_and_cf_tied_share": 0.6027887580904392,
+      "auc_title": 0.5805221319664654,
+      "auc_title_ci95": [
+        0.5773023543720951,
+        0.5837020546457582
+      ],
+      "auc_cap_raw": 0.545454150558186,
+      "auc_cap_raw_ci95": [
+        0.5422216671734503,
+        0.5485703270926545
+      ],
+      "auc_cap_resid": 0.5236827244689631,
+      "auc_cap_resid_ci95": [
+        0.5209179662047696,
+        0.526281221493419
+      ],
+      "auc_main": 0.5043413386386244,
+      "auc_main_ci95": [
+        0.5015666336492679,
+        0.5071046283635686
+      ],
+      "auc_shuffle_main": 0.5032471223532755,
+      "auc_shuffle_main_ci95": [
+        0.5000350963548714,
+        0.5067442396023804
+      ],
+      "auc_main_cf": 0.5041796379568777,
+      "auc_main_cf_ci95": [
+        0.5011240144283516,
+        0.5069780472984179
+      ],
+      "auc_shuffle_main_cf": 0.503163553557016,
+      "auc_shuffle_main_cf_ci95": [
+        0.4998188753541093,
+        0.5066771392227262
+      ]
+    },
+    "Home_and_Kitchen": {
+      "mode": "amendment1_test_cf",
+      "items_with_caption": 33471,
+      "template_tokens_dropped": 3,
+      "positives": 31749,
+      "triples": 158745,
+      "title_tied_share": 0.6699423603893035,
+      "main_tie_share": 0.8568406205923836,
+      "title_and_cf_tied_share": 0.6691927304797002,
+      "auc_title": 0.5436328703266244,
+      "auc_title_ci95": [
+        0.5412343695864437,
+        0.5462318498220416
+      ],
+      "auc_cap_raw": 0.5200856719896689,
+      "auc_cap_raw_ci95": [
+        0.5179655264732748,
+        0.5222622759771962
+      ],
+      "auc_cap_resid": 0.5099719676210275,
+      "auc_cap_resid_ci95": [
+        0.5081732495511669,
+        0.5117109200289772
+      ],
+      "auc_main": 0.5033239304184297,
+      "auc_main_ci95": [
+        0.5014878997318257,
+        0.5052126130088584
+      ],
+      "auc_shuffle_main": 0.5004842501175364,
+      "auc_shuffle_main_ci95": [
+        0.4985486400925129,
+        0.5024112837713087
+      ],
+      "auc_main_cf": 0.503332360610368,
+      "auc_main_cf_ci95": [
+        0.5015299334233911,
+        0.5052059579529818
+      ],
+      "auc_shuffle_main_cf": 0.5004894992986981,
+      "auc_shuffle_main_cf_ci95": [
+        0.49846557062227503,
+        0.5025506201819735
+      ]
+    },
+    "Movies_and_TV": {
+      "mode": "amendment1_test_cf",
+      "items_with_caption": 12795,
+      "template_tokens_dropped": 1,
+      "positives": 12886,
+      "triples": 64430,
+      "title_tied_share": 0.6302188421542759,
+      "main_tie_share": 0.8213766777490457,
+      "title_and_cf_tied_share": 0.6178953903461121,
+      "auc_title": 0.5994800558745926,
+      "auc_title_ci95": [
+        0.5951261058513114,
+        0.6035707356821357
+      ],
+      "auc_cap_raw": 0.5918516219152569,
+      "auc_cap_raw_ci95": [
+        0.5871872574887474,
+        0.5965412075120285
+      ],
+      "auc_cap_resid": 0.5216514046251746,
+      "auc_cap_resid_ci95": [
+        0.518826633555797,
+        0.5244375679031507
+      ],
+      "auc_main": 0.5189754956286171,
+      "auc_main_ci95": [
+        0.5154646827300646,
+        0.5225564538105378
+      ],
+      "auc_shuffle_main": 0.5032138899150351,
+      "auc_shuffle_main_ci95": [
+        0.4989511748977177,
+        0.5071373726748399
+      ],
+      "auc_main_cf": 0.519215794629625,
+      "auc_main_cf_ci95": [
+        0.5156814458617458,
+        0.5230098152399676
+      ],
+      "auc_shuffle_main_cf": 0.5036673281253925,
+      "auc_shuffle_main_cf_ci95": [
+        0.49949680367634464,
+        0.5078727436559615
+      ]
+    },
+    "Tools_and_Home_Improvement": {
+      "mode": "amendment1_test_cf",
+      "items_with_caption": 19865,
+      "template_tokens_dropped": 3,
+      "positives": 18572,
+      "triples": 92860,
+      "title_tied_share": 0.6985031229808314,
+      "main_tie_share": 0.8441176017143827,
+      "title_and_cf_tied_share": 0.695304759853543,
+      "auc_title": 0.5531499030799052,
+      "auc_title_ci95": [
+        0.5502025899203101,
+        0.5563486700409218
+      ],
+      "auc_cap_raw": 0.5249730777514539,
+      "auc_cap_raw_ci95": [
+        0.5220160725823821,
+        0.5278699116950247
+      ],
+      "auc_cap_resid": 0.5136011199655395,
+      "auc_cap_resid_ci95": [
+        0.5112424617704071,
+        0.5158907225931509
+      ],
+      "auc_main": 0.505187857484236,
+      "auc_main_ci95": [
+        0.502791820789478,
+        0.5076695121053483
+      ],
+      "auc_shuffle_main": 0.5004316790774401,
+      "auc_shuffle_main_ci95": [
+        0.49770154963217833,
+        0.5031917054778804
+      ],
+      "auc_main_cf": 0.5051265371867546,
+      "auc_main_cf_ci95": [
+        0.5027977354483294,
+        0.5074853977021785
+      ],
+      "auc_shuffle_main_cf": 0.5003949447077409,
+      "auc_shuffle_main_cf_ci95": [
+        0.4977224620473743,
+        0.5031256430164532
+      ]
+    },
+    "Video_Games": {
+      "mode": "amendment1_test_cf",
+      "items_with_caption": 9514,
+      "template_tokens_dropped": 1,
+      "positives": 14211,
+      "triples": 71055,
+      "title_tied_share": 0.49653085637886146,
+      "main_tie_share": 0.8075451376094782,
+      "title_and_cf_tied_share": 0.4781788755189642,
+      "auc_title": 0.6418619379354021,
+      "auc_title_ci95": [
+        0.6373930406023502,
+        0.6462896699739639
+      ],
+      "auc_cap_raw": 0.5737386531560059,
+      "auc_cap_raw_ci95": [
+        0.5695441911195552,
+        0.5775035184012385
+      ],
+      "auc_cap_resid": 0.529364576736331,
+      "auc_cap_resid_ci95": [
+        0.526296179016255,
+        0.5324044754063754
+      ],
+      "auc_main": 0.5190187352966186,
+      "auc_main_ci95": [
+        0.5153541051617175,
+        0.5229282506328867
+      ],
+      "auc_shuffle_main": 0.5018140075394688,
+      "auc_shuffle_main_ci95": [
+        0.4981349696145682,
+        0.5056575668304795
+      ],
+      "auc_main_cf": 0.5185125231774436,
+      "auc_main_cf_ci95": [
+        0.5145529244193343,
+        0.5221986685055209
+      ],
+      "auc_shuffle_main_cf": 0.5014568678812138,
+      "auc_shuffle_main_cf_ci95": [
+        0.4977188507666374,
+        0.5051142690165582
+      ]
+    }
+  },
+  "calibration_games_qwen3vl": {
+    "primary_M": {
+      "mode": "primary_train",
+      "items_with_caption": 8898,
+      "template_tokens_dropped": 14,
+      "positives": 94454,
+      "triples": 472270,
+      "title_tied_share": 0.5774154614944841,
+      "main_tie_share": 0.2123610173966615,
+      "auc_title": 0.6336417727147606,
+      "auc_title_ci95": [
+        0.6320756929298917,
+        0.635308218815508
+      ],
+      "auc_cap_raw": 0.6141688017447646,
+      "auc_cap_raw_ci95": [
+        0.6121717449763906,
+        0.6161809716899231
+      ],
+      "auc_cap_resid": 0.6106231604802338,
+      "auc_cap_resid_ci95": [
+        0.6087344104008301,
+        0.6127363584390285
+      ],
+      "auc_main": 0.5804998973215595,
+      "auc_main_ci95": [
+        0.5778392833042794,
+        0.5830373198923563
+      ],
+      "auc_shuffle_main": 0.5000128348050576,
+      "auc_shuffle_main_ci95": [
+        0.49759873071633753,
+        0.5026501513412808
+      ]
+    },
+    "amendment1_M_cf": {
+      "mode": "amendment1_test_cf",
+      "items_with_caption": 8898,
+      "template_tokens_dropped": 14,
+      "positives": 13153,
+      "triples": 65765,
+      "title_tied_share": 0.4881776020679693,
+      "main_tie_share": 0.21305092664693973,
+      "title_and_cf_tied_share": 0.4702501330494944,
+      "auc_title": 0.6418687751843686,
+      "auc_title_ci95": [
+        0.6374650269900404,
+        0.64626568083327
+      ],
+      "auc_cap_raw": 0.6128563825743176,
+      "auc_cap_raw_ci95": [
+        0.6076315289287616,
+        0.6182121949365164
+      ],
+      "auc_cap_resid": 0.6111001292480803,
+      "auc_cap_resid_ci95": [
+        0.6054795483920018,
+        0.6167644263666083
+      ],
+      "auc_main": 0.5786326117427192,
+      "auc_main_ci95": [
+        0.5717780186517565,
+        0.5861968859834474
+      ],
+      "auc_shuffle_main": 0.4975393240928204,
+      "auc_shuffle_main_ci95": [
+        0.4903510122410071,
+        0.5050257299002892
+      ],
+      "auc_main_cf": 0.5746782642436784,
+      "auc_main_cf_ci95": [
+        0.5670749634645303,
+        0.5820014352661456
+      ],
+      "auc_shuffle_main_cf": 0.49875509280217295,
+      "auc_shuffle_main_cf_ci95": [
+        0.49162253559102176,
+        0.5053797719253543
+      ]
+    }
+  },
+  "decision_primary_M": {
+    "metric": "main",
+    "gates": {
+      "G1_shuffle_null": false,
+      "G2_title_positive_control": false,
+      "G3_games_not_top2": false
+    },
+    "ranking": [
+      "Video_Games",
+      "Movies_and_TV",
+      "Arts_Crafts_and_Sewing",
+      "Electronics",
+      "Tools_and_Home_Improvement",
+      "Home_and_Kitchen"
+    ],
+    "qualifying": null,
+    "difference_vs_games": {
+      "Movies_and_TV": {
+        "minus_games": -0.0017040338067675354,
+        "ci95": [
+          -0.0034901058198228696,
+          5.473797210745457e-05
+        ]
+      },
+      "Arts_Crafts_and_Sewing": {
+        "minus_games": -0.009153777876992009,
+        "ci95": [
+          -0.011060600930616699,
+          -0.007325644090618636
+        ]
+      },
+      "Electronics": {
+        "minus_games": -0.01389740516293314,
+        "ci95": [
+          -0.01560508868575168,
+          -0.012400081524552188
+        ]
+      },
+      "Tools_and_Home_Improvement": {
+        "minus_games": -0.0145459448487133,
+        "ci95": [
+          -0.016011835327327858,
+          -0.013076468032368485
+        ]
+      },
+      "Home_and_Kitchen": {
+        "minus_games": -0.016087727876112012,
+        "ci95": [
+          -0.017468387809014,
+          -0.01477780610995023
+        ]
+      }
+    },
+    "verdict": "PROXY_INVALID"
+  },
+  "decision_amendment1_M_cf": {
+    "metric": "main_cf",
+    "gates": {
+      "G1_shuffle_null": true,
+      "G2_title_positive_control": false,
+      "G3_games_not_top2": false,
+      "C_cf_qwen_games_Mcf_le_0.52": false
+    },
+    "ranking": [
+      "Movies_and_TV",
+      "Video_Games",
+      "Arts_Crafts_and_Sewing",
+      "Tools_and_Home_Improvement",
+      "Electronics",
+      "Home_and_Kitchen"
+    ],
+    "qualifying": null,
+    "difference_vs_games": {
+      "Movies_and_TV": {
+        "minus_games": 0.0007032714521814087,
+        "ci95": [
+          -0.004332194189619889,
+          0.006314893294050835
+        ]
+      },
+      "Arts_Crafts_and_Sewing": {
+        "minus_games": -0.013027771846000347,
+        "ci95": [
+          -0.0182721748819488,
+          -0.007862842263782975
+        ]
+      },
+      "Tools_and_Home_Improvement": {
+        "minus_games": -0.013385985990688964,
+        "ci95": [
+          -0.017993729462664906,
+          -0.008526435230970256
+        ]
+      },
+      "Electronics": {
+        "minus_games": -0.01433288522056586,
+        "ci95": [
+          -0.019352224445211893,
+          -0.009495335901066972
+        ]
+      },
+      "Home_and_Kitchen": {
+        "minus_games": -0.01518016256707555,
+        "ci95": [
+          -0.019245093094798018,
+          -0.01063038237655064
+        ]
+      }
+    },
+    "verdict": "PROXY_INVALID"
+  }
+}

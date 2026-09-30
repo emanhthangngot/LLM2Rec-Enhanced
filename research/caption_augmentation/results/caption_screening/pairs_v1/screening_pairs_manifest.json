@@ -1,0 +1,35 @@
+{
+  "item_titles_sha256": "34bd960228c9e84f852f911189b43c48025bb6ef4c8d29709841ec8d260e5333",
+  "catalog_size": 108753,
+  "splits": {
+    "train": {
+      "source_sha256": "b67173e5ccb2b0febae3d4d0b71bc369100b463b3acad6d55b6c3f5a262e1c64",
+      "rows": 960757,
+      "target_title_mismatches": 0,
+      "self_pairs": 34964,
+      "output": "pairs_train.tsv.gz",
+      "output_sha256": "c5c2bb8647de16b29f13ca09d9fa46b5594a70510d60afd20757ab3cd4e645c3"
+    },
+    "valid": {
+      "source_sha256": "ae236178851cf19fedd5e8a1e35b51abe5adbdce9ee9f9f49d9c87c758175657",
+      "rows": 120095,
+      "target_title_mismatches": 0,
+      "self_pairs": 4906,
+      "output": "pairs_valid.tsv.gz",
+      "output_sha256": "5fd9519974880cdee1c2308cb7291374ea0a0ec23a0e79f222ef58ffa75e873d"
+    },
+    "test": {
+      "source_sha256": "cca204d1571dd76e70bb6a2752574e0ab72ff3ce0b9897969a619cd5c147c4ca",
+      "rows": 120099,
+      "target_title_mismatches": 0,
+      "self_pairs": 5547,
+      "output": "pairs_test.tsv.gz",
+      "output_sha256": "cc514643d21598fa54bded427a77471cea73f2ad3ecb587fc8b64fac6d24154f"
+    }
+  },
+  "item_asin": {
+    "items": 108733,
+    "output_sha256": "2def9c04c7f61bfcc2572edd31b76f28b80dfc8c63d3e3109a50fe023ea41196"
+  },
+  "seconds": 34.42373490333557
+}

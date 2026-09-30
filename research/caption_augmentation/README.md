@@ -117,6 +117,20 @@ Large regenerable outputs are not committed: `arm-inputs/*.csv` (up to
 147 MB) and the item-embedding `.npy` files. The artifact JSONs record the
 embedding SHA-256.
 
+## Zero-GPU domain screening
+
+`screening/protocol.md` pre-registers the screening. `screening/caption_signal.py`
+measures it on train transitions exported by the CPU kernel
+`kaggle/caption_screening_pairs/` (`trixuanle/llm2rec-caption-screening-pairs-v1`,
+output in `results/caption_screening/pairs_v1/`). The metric is the AUC of
+title-residual caption similarity for the true next item against matched
+negatives, restricted to title-tied triples. Result: `PROXY_INVALID`. The
+metric ranks Video_Games first, but the paired pilot found no gain there, so
+no domain is selected for GPU. `screening/games_baseline_conditioned.py`
+examines the test triples that the title-only embedding gets wrong. There,
+captions still separate the true item (AUC 0.554), but the trained `real`
+embedding does not (0.490). Details: `docs/reports/v10-caption-screening.md`.
+
 The Python package directory was renamed `caption_augmentation` in this
 repository. The Kaggle packaging code (`package.py`) and the committed
 notebook still use the import name `visual_delta_fusion`, which is the name

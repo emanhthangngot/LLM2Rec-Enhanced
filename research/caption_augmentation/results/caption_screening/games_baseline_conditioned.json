@@ -1,0 +1,27 @@
+{
+  "asin_join": {
+    "csv_items": 9517,
+    "asin_missing_in_catalog": 0,
+    "id_differs_from_global_id": 9517
+  },
+  "positives": 13153,
+  "negatives_per_positive": 5,
+  "all": {
+    "triples": 65765,
+    "auc_caption_resid": 0.6103550520793736,
+    "auc_title_only_embedding": 0.6065612407815707,
+    "auc_real_embedding": 0.5816011556298943
+  },
+  "title_emb_wrong": {
+    "triples": 25875,
+    "auc_caption_resid": 0.5543381642512077,
+    "auc_title_only_embedding": 1.932367149758454e-05,
+    "auc_real_embedding": 0.4897391304347826
+  },
+  "title_emb_right": {
+    "triples": 39890,
+    "auc_caption_resid": 0.646690899974931,
+    "auc_title_only_embedding": 1.0,
+    "auc_real_embedding": 0.6411882677362748
+  }
+}
