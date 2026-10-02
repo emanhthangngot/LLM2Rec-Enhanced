@@ -112,9 +112,13 @@ def responsiveness(reward_gaps):
 _QUESTION = "Based on the user's history, will they like this candidate item next? Answer Yes or No."
 
 
+_MIN_SIDE = 28  # Qwen2.5-VL smart_resize rejects sides below its 28 px patch factor
+_MAX_ASPECT = 150  # ... and aspect ratios above 200; letterbox well before that
+
+
 @lru_cache(maxsize=512)
 def _resize_image(image_path: str, max_pixels: int):
-    from PIL import Image
+    from PIL import Image, ImageOps
 
     with Image.open(image_path) as handle:
         image = handle.convert("RGB")
@@ -122,6 +126,11 @@ def _resize_image(image_path: str, max_pixels: int):
     if width * height > max_pixels:
         scale = (max_pixels / (width * height)) ** 0.5
         image = image.resize((max(1, int(width * scale)), max(1, int(height * scale))))
+    if min(image.size) < _MIN_SIDE or max(image.size) / min(image.size) > _MAX_ASPECT:
+        contained = ImageOps.contain(image, (2 * _MIN_SIDE, 2 * _MIN_SIDE), method=Image.Resampling.LANCZOS)
+        canvas = Image.new("RGB", (2 * _MIN_SIDE, 2 * _MIN_SIDE), (255, 255, 255))
+        canvas.paste(contained, ((2 * _MIN_SIDE - contained.width) // 2, (2 * _MIN_SIDE - contained.height) // 2))
+        image = canvas
     return image
 
 
@@ -292,6 +301,7 @@ def _batch_answer_logprobs(model, model_inputs, functional_module, yes_token_id:
 
 
 def _build_batch_inputs(processor, policy_model, catalog, examples, max_pixels, shuffle_map):
+    processor.tokenizer.padding_side = "right"  # pin: _batch_answer_logprobs reads the last real token
     messages = [
         _build_messages(catalog, example["history"], example["candidate"], max_pixels, shuffle_map)
         for example in examples
@@ -359,6 +369,75 @@ def _reference_answer_logprobs(policy_model, model_inputs, torch_module, functio
             policy_model.train()
     return values
 
+def _mean_or_none(values):
+    values = list(values)
+    return sum(values) / len(values) if values else None
+
+
+def _build_sft_examples(train_pairs, yes_token_id: int, no_token_id: int, seed: int):
+    """HaNoRec hit=1 binary SFT task: true next item -> Yes, seeded random unseen item -> No.
+
+    Label balance is 50/50 as in upstream utils/data_loader.py. Adaptation: upstream emits ONE
+    randomly-labelled sample per user row; here every training pair contributes BOTH a Yes and a
+    No sample (2 x train_pairs examples per epoch, hence 2x the optimizer updates), because only
+    530 pairs are available. Hard CF negatives are reserved for DPO.
+    """
+    examples = []
+    for pair in train_pairs:
+        examples.append({"history": pair["history"], "candidate": pair["positive"], "answer_token": yes_token_id})
+        examples.append({"history": pair["history"], "candidate": pair["sft_negative"], "answer_token": no_token_id})
+    random.Random(seed).shuffle(examples)
+    return examples
+
+
+def _disable_dropout(model, torch_module) -> int:
+    """LLaMA-Factory DPO calls trl.disable_dropout_in_model on the policy; mirror it."""
+    count = 0
+    for module in model.modules():
+        if isinstance(module, torch_module.nn.Dropout) and module.p != 0.0:
+            module.p = 0.0
+            count += 1
+    return count
+
+
+def _assert_language_only_lora(model) -> int:
+    names = [name for name, module in model.named_modules() if hasattr(module, "lora_A") and hasattr(module, "lora_B")]
+    if not names:
+        raise RuntimeError("no LoRA modules were attached")
+    leaked = [name for name in names if "visual" in name]
+    if leaked:
+        raise RuntimeError(f"LoRA attached to the frozen vision tower: {leaked[:3]}")
+    return len(names)
+
+
+def _answer_separation_probe(
+    pairs, processor, policy_model, catalog, max_pixels, shuffle_map,
+    yes_token_id, no_token_id, torch_module, functional_module,
+):
+    """Does the frozen reference say Yes to true items and No to negatives? Detects a saturated reference."""
+    was_training = policy_model.training
+    policy_model.eval()
+    margins = {"positive": [], "sft_negative": [], "hard_negative": []}
+    with torch_module.no_grad():
+        for kind, key in (("positive", "positive"), ("sft_negative", "sft_negative"), ("hard_negative", "negative")):
+            examples = [{"history": pair["history"], "candidate": pair[key]} for pair in pairs]
+            for batch in _chunked(examples, 4, False):
+                inputs = _build_batch_inputs(processor, policy_model, catalog, batch, max_pixels, shuffle_map)
+                values = _batch_answer_logprobs(policy_model, inputs, functional_module, yes_token_id, no_token_id)
+                margins[kind].extend(float((yes - no).cpu()) for yes, no in values)
+    if was_training:
+        policy_model.train()
+    mean = _mean_or_none
+    fraction = lambda values, positive: (sum((v > 0) == positive for v in values) / len(values)) if values else None
+    return {
+        "pairs": len(pairs),
+        "mean_yes_minus_no": {kind: mean(values) for kind, values in margins.items()},
+        "positive_yes_fraction": fraction(margins["positive"], True),
+        "sft_negative_no_fraction": fraction(margins["sft_negative"], False),
+        "hard_negative_no_fraction": fraction(margins["hard_negative"], False),
+    }
+
+
 def _build_dpo_examples(train_pairs, yes_token_id: int, no_token_id: int, shuffle_map: dict[int, int] | None):
     examples = []
     for pair in train_pairs:
@@ -404,6 +483,15 @@ def _load_base_model(config: dict[str, Any]):
     )
     policy_model.eval()
     return processor, policy_model
+# LLaMA-Factory `lora_target all` + `freeze_vision_tower=True` (default) adapts the
+# language-model linear layers only; the vision tower and its merger stay frozen.
+# Regex over module names: Qwen2.5-VL language layers are `...layers.N.*`, vision
+# blocks are `visual.blocks.N.*` and never match.
+LORA_TARGET_REGEX = (
+    r".*\.layers\.\d+\.(self_attn\.(q_proj|k_proj|v_proj|o_proj)|mlp\.(gate_proj|up_proj|down_proj))"
+)
+
+
 def _lora_config():
     from peft import LoraConfig
 
@@ -411,7 +499,7 @@ def _lora_config():
         r=8,
         lora_alpha=32,
         lora_dropout=0.05,
-        target_modules="all-linear",
+        target_modules=LORA_TARGET_REGEX,
         task_type="CAUSAL_LM",
     )
 
@@ -569,15 +657,16 @@ def _score_rows(
                     for yes_value, no_value in values
                 )
             ranked = sorted(
-                zip(eval_row["candidates"], candidate_scores, strict=True),
-                key=lambda pair: (-pair[1], int(pair[0])),
+                enumerate(zip(eval_row["candidates"], candidate_scores, strict=True)),
+                key=lambda entry: (-entry[1][1], entry[0]),  # ties keep the retriever order
             )
-            ranked_ids = [item for item, _score in ranked]
+            ranked_ids = [item for _position, (item, _score) in ranked]
             target = int(eval_row["target"])
             rank = ranked_ids.index(target) + 1 if target in ranked_ids else 0
             predictions.append(
                 {
                     "user_id": eval_row["user_id"],
+                    **({"cluster_id": eval_row["cluster_id"]} if "cluster_id" in eval_row else {}),
                     "target": target,
                     "ranked_candidates": ranked_ids,
                     "rank": rank,
@@ -589,6 +678,50 @@ def _score_rows(
     if was_training:
         policy_model.train()
     return predictions
+
+
+def _learning_probe(config, processor, model, catalog, pairs, validation_rows, yes, no, torch_module, functional, shuffle_map):
+    """Fixed clean/noisy preference diagnostics; separate noise RNG never consumes training RNG."""
+    count = int(config.get("learning_probe_pairs", 0))
+    if count <= 0:
+        return None
+    subsets = {"train": pairs[:count]}
+    validation_pairs = []
+    for row in validation_rows[:count]:
+        negatives = [item for item in row["candidates"] if item != row["target"] and item not in row["history"]]
+        if negatives:
+            validation_pairs.append({"history": row["history"], "positive": row["target"], "negative": negatives[0]})
+    subsets["validation"] = validation_pairs
+    was_training = model.training
+    model.eval()
+    results = {}
+    try:
+        for split, rows in subsets.items():
+            examples = _build_dpo_examples(rows, yes, no, None)
+            clean_gaps, noisy_gaps, clean_answers = [], [], []
+            generator = torch_module.Generator(device=next(model.parameters()).device)
+            generator.manual_seed(int(config["seed"]) + 8001)
+            with torch_module.no_grad():
+                for batch in _chunked(examples, int(config["batch_size"]), False):
+                    ref = _preference_terms(batch, processor, model, catalog, int(config["max_pixels"]), yes, no,
+                                            torch_module, functional, shuffle_map=shuffle_map, reference=True)
+                    clean = _preference_terms(batch, processor, model, catalog, int(config["max_pixels"]), yes, no,
+                                              torch_module, functional, shuffle_map=shuffle_map, reference=False)
+                    with perturb_lora_weights(model, float(config["noise_sigma"]), torch_module, functional, generator):
+                        noisy = _preference_terms(batch, processor, model, catalog, int(config["max_pixels"]), yes, no,
+                                                  torch_module, functional, shuffle_map=shuffle_map, reference=False)
+                    for reference, policy, perturbation in zip(ref, clean, noisy, strict=True):
+                        ref_gap = reference[0] - reference[1]
+                        clean_answers.append(float((policy[0] - policy[1]).cpu()))
+                        clean_gaps.append(float((policy[0] - policy[1] - ref_gap).cpu()))
+                        noisy_gaps.append(float((perturbation[0] - perturbation[1] - ref_gap).cpu()))
+            results[split] = {"pairs": len(rows), "clean_policy_minus_reference": clean_gaps,
+                              "noisy_policy_minus_reference": noisy_gaps, "clean_chosen_minus_rejected": clean_answers}
+        results["validation_negative_caveat"] = "SASRec non-target candidates are unlabeled hard candidates, not proven dislikes."
+        return results
+    finally:
+        if was_training:
+            model.train()
 
 
 def _run_dpo_arm(
@@ -639,6 +772,12 @@ def _run_dpo_arm(
         * float(lambda_cf_values[index]) ** (1.0 - float(weight))
         for index in range(len(train_pairs))
     ]
+    if config.get("hardness_control") == "mean":
+        mean_hardness = sum(lambda_combined) / len(lambda_combined)
+        lambda_combined = [mean_hardness] * len(lambda_combined)
+    elif config.get("hardness_control") is not None:
+        raise ValueError(f"unsupported hardness_control: {config.get('hardness_control')!r}")
+    dropout_modules_disabled = _disable_dropout(policy_model, torch)
     hardness_per_example = [value for value in lambda_combined for _ in range(2)]
     batches = _chunked(examples, batch_size, drop_last)
     if not batches or len(batches[0]) < 3:
@@ -667,10 +806,25 @@ def _run_dpo_arm(
     reference_probe = [float(value[0].detach().cpu()) for value in reference_probe_terms]
     reference_cache = {
         0: [
-            (chosen.detach(), rejected.detach())
+            (chosen.detach().clone(), rejected.detach().clone())  # do not retain the full vocabulary storage
             for chosen, rejected in reference_probe_terms
         ]
     }
+    with torch.no_grad():
+        policy_model.eval()
+        init_terms = _preference_terms(
+            batches[0], processor, policy_model, catalog, max_pixels, yes_token_id, no_token_id,
+            torch, functional, shuffle_map=arm_shuffle_map, reference=False,
+        )
+        policy_model.train()
+    init_parity_max_abs_logit = max(
+        abs(float((init_terms[index][0] - reference_probe_terms[index][0] - init_terms[index][1] + reference_probe_terms[index][1]).cpu()))
+        for index in range(len(init_terms))
+    )
+    if init_parity_max_abs_logit > 0.25:  # bf16 ULP at |logit|~10 is ~0.08; real composition bugs are O(1)
+        raise RuntimeError(f"policy differs from the SFT reference before any DPO step: {init_parity_max_abs_logit}")
+    probe_before = _learning_probe(config, processor, policy_model, catalog, train_pairs, validation_rows,
+                                   yes_token_id, no_token_id, torch, functional, arm_shuffle_map)
     for epoch in range(epochs):
         order = list(range(len(batches)))
         random.Random(int(config.get("seed", 2024)) + epoch).shuffle(order)
@@ -688,7 +842,7 @@ def _run_dpo_arm(
             group_size = _accumulation_group_size(position, len(order), accumulation_steps)
             if batch_index not in reference_cache:
                 reference_cache[batch_index] = [
-                    (chosen.detach(), rejected.detach())
+                    (chosen.detach().clone(), rejected.detach().clone())
                     for chosen, rejected in _preference_terms(
                         batch, processor, policy_model, catalog, max_pixels,
                         yes_token_id, no_token_id, torch, functional,
@@ -782,6 +936,8 @@ def _run_dpo_arm(
         raise RuntimeError("SFT reference changed after DPO updates")
     if not changed:
         raise RuntimeError("no DPO parameter changed after training")
+    probe_after = _learning_probe(config, processor, policy_model, catalog, train_pairs, validation_rows,
+                                  yes_token_id, no_token_id, torch, functional, arm_shuffle_map)
     eval_batch_size = int(config.get("eval_batch_size", 1))
     validation_start = time.monotonic()
     validation_predictions = _score_rows(
@@ -805,11 +961,16 @@ def _run_dpo_arm(
     )
     scoring_batching_check = None
     if config.get("verify_scoring_batching") and eval_batch_size > 1:
+        check_rows, check_predictions = (
+            (evaluation_rows, predictions) if evaluation_rows else (validation_rows, validation_predictions)
+        )
+        if not check_rows:
+            raise RuntimeError("verify_scoring_batching requires at least one scored row")
         single_row_predictions = _score_rows(
-            evaluation_rows[:1], processor, policy_model, catalog, max_pixels,
+            check_rows[:1], processor, policy_model, catalog, max_pixels,
             yes_token_id, no_token_id, torch, functional, arm_shuffle_map, 1,
         )
-        batched_row = predictions[0]
+        batched_row = check_predictions[0]
         single_row = single_row_predictions[0]
         scoring_batching_check = {
             "rows_checked": 1,
@@ -851,9 +1012,13 @@ def _run_dpo_arm(
         "python_rng_state": random.getstate(),
         "noise_generator_state": noise_generator.get_state(),
         "train_item_order": [int(item) for item in item_order],
-        "mean_ndcg@10": sum(item["ndcg@10"] for item in predictions) / len(predictions),
-        "mean_recall@10": sum(item["recall@10"] for item in predictions) / len(predictions),
-        "mean_candidate_recall@20": sum(item["candidate_recall@20"] for item in predictions) / len(predictions),
+        "mean_ndcg@10": _mean_or_none(item["ndcg@10"] for item in predictions),
+        "mean_recall@10": _mean_or_none(item["recall@10"] for item in predictions),
+        "mean_candidate_recall@20": _mean_or_none(item["candidate_recall@20"] for item in predictions),
+        "hardness_control": config.get("hardness_control"),
+        "dropout_modules_disabled": dropout_modules_disabled,
+        "init_parity_max_abs_logit": init_parity_max_abs_logit,
+        "learning_probe": {"before": probe_before, "after": probe_after},
     }
 
 
@@ -942,13 +1107,18 @@ def run_sft(config: dict[str, Any], prepared: dict[str, Any], output_root: Path,
         sft_shuffle_map,
     )
     policy_model = _wrap_sft_lora(policy_model)
+    lora_module_count = _assert_language_only_lora(policy_model)
     _set_active_adapters(policy_model, "sft")
     batch_size = int(config.get("sft_batch_size", config.get("batch_size", 4)))
     accumulation_steps = int(config.get("sft_gradient_accumulation_steps", config.get("gradient_accumulation_steps", 8)))
     epochs = int(config.get("sft_epochs", config.get("num_epochs", 5)))
     max_updates = config.get("sft_max_optimizer_updates", config.get("max_optimizer_updates"))
     max_updates = None if max_updates is None else int(max_updates)
-    batches = _chunked(train_pairs, batch_size, bool(config.get("drop_last", True)))
+    batches = _chunked(
+        _build_sft_examples(train_pairs, yes_token_id, no_token_id, seed),
+        batch_size,
+        bool(config.get("drop_last", True)),
+    )
     if not batches:
         raise RuntimeError("SFT has no complete mini-batches")
     optimizer = torch.optim.AdamW(
@@ -979,17 +1149,17 @@ def run_sft(config: dict[str, Any], prepared: dict[str, Any], output_root: Path,
             if pending == 0:
                 update_start = time.monotonic()
             batch = batches[batch_index]
-            sft_examples = [
-                {"history": pair["history"], "candidate": pair["positive"]}
-                for pair in batch
-            ]
+            sft_examples = batch
             inputs = _build_batch_inputs(
                 processor, policy_model, catalog, sft_examples, max_pixels, sft_shuffle_map
             )
             sft_values = _batch_answer_logprobs(
                 policy_model, inputs, functional, yes_token_id, no_token_id
             )
-            batch_loss = -sum(yes_value for yes_value, _no_value in sft_values) / len(batch)
+            batch_loss = -sum(
+                yes_value if example["answer_token"] == yes_token_id else no_value
+                for example, (yes_value, no_value) in zip(batch, sft_values, strict=True)
+            ) / len(batch)
             if not torch.isfinite(batch_loss):
                 raise RuntimeError("SFT loss is non-finite")
             group_size = _accumulation_group_size(position, len(order), accumulation_steps)
@@ -1046,6 +1216,11 @@ def run_sft(config: dict[str, Any], prepared: dict[str, Any], output_root: Path,
     )[0].cpu())
     if not math.isclose(first, second, abs_tol=1e-5):
         raise RuntimeError("SFT reference is not deterministic")
+    sft_probe = _answer_separation_probe(
+        train_pairs[: int(config.get("sft_probe_pairs", 32))], processor, policy_model, catalog,
+        max_pixels, sft_shuffle_map, yes_token_id, no_token_id, torch, functional,
+    )
+    print(json.dumps({"sft_probe": sft_probe}))
     eval_batch_size = int(config.get("eval_batch_size", 1))
     validation_start = time.monotonic()
     sft_validation_predictions = _score_rows(
@@ -1098,6 +1273,8 @@ def run_sft(config: dict[str, Any], prepared: dict[str, Any], output_root: Path,
         "stage_timings": stage_timings,
         "gpu_memory": _cuda_peak_memory(torch),
         "reference_reproducibility_check": {"first": first, "second": second},
+        "sft_probe": sft_probe,
+        "lora_module_count": lora_module_count,
         "provenance": prepared["provenance"],
         "status": "COMPLETE",
     }
@@ -1183,6 +1360,7 @@ def run_arm(
             "cuda_rng_state": cuda_rng_state,
             "parent_sft_sha256": parent_hash,
             "weight": weight,
+            "hardness_control": arm_result["hardness_control"],
             "python_rng_state": python_rng_state,
             "noise_generator_state": noise_generator_state,
             "image_condition": image_condition,
@@ -1213,6 +1391,18 @@ def run_arm(
     return arm_result
 
 
+def _pair_pixel_cost(catalog, pair, max_pixels: int) -> int:
+    """Worst-case probe ordering: total pixels (capped per image) of the pair's prompt images."""
+    from PIL import Image
+
+    total = 0
+    for item in [*pair["history"], pair["positive"]]:
+        with Image.open(catalog[str(item)]["image_path"]) as handle:
+            width, height = handle.size
+        total += min(width * height, max_pixels)
+    return total
+
+
 def run_resource_probe(config: dict[str, Any], prepared: dict[str, Any], output_root: Path) -> dict[str, Any]:
     """Measure real forward+backward memory/time across batch and image budgets.
 
@@ -1228,7 +1418,8 @@ def run_resource_probe(config: dict[str, Any], prepared: dict[str, Any], output_
     _seed_everything(int(config.get("seed", 2024)), torch)
     processor, policy_model = _load_base_model(config)
     policy_model = _wrap_sft_lora(policy_model)
-    _set_active_adapters(policy_model, "sft")
+    policy_model = _add_dpo_lora(policy_model)
+    _disable_dropout(policy_model, torch)
     policy_model.train()
     catalog = prepared["catalog"]
     train_pairs = prepared["train"]
@@ -1245,9 +1436,13 @@ def run_resource_probe(config: dict[str, Any], prepared: dict[str, Any], output_
         }
         record["images_per_batch"] = record["images_per_example"] * batch_size
         record["pixel_budget_per_batch"] = record["images_per_batch"] * max_pixels
+        costly_pairs = sorted(
+            train_pairs,
+            key=lambda pair: -_pair_pixel_cost(catalog, pair, max_pixels),
+        )[:batch_size]
         examples = [
             {"history": pair["history"], "candidate": pair["positive"]}
-            for pair in train_pairs[:batch_size]
+            for pair in costly_pairs
         ]
         if len(examples) < batch_size:
             record.update({"ok": False, "error": "insufficient_train_pairs"})
@@ -1269,11 +1464,13 @@ def run_resource_probe(config: dict[str, Any], prepared: dict[str, Any], output_
             loss = outputs.logits[:, -1, :].float().mean()
             loss.backward()
             torch.cuda.synchronize()
+            gpu_memory = _cuda_peak_memory(torch)
             record.update(
                 {
                     "ok": True,
                     "forward_backward_seconds": time.monotonic() - started,
-                    "gpu_memory": _cuda_peak_memory(torch),
+                    "gpu_memory": gpu_memory,
+                    "fits_with_headroom": gpu_memory["peak_reserved_fraction"] <= float(config.get("probe_max_reserved_fraction", 0.85)),
                 }
             )
         except torch.cuda.OutOfMemoryError:

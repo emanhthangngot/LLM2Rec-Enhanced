@@ -1,0 +1,18 @@
+{
+  "id": "trlxun/hanorec-v11-repaired-arms",
+  "title": "hanorec-v11-repaired-arms",
+  "code_file": "notebook.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_tpu": false,
+  "enable_internet": true,
+  "keywords": [],
+  "dataset_sources": [],
+  "kernel_sources": [
+    "trlxun/hanorec-v11-repaired-sft"
+  ],
+  "competition_sources": [],
+  "model_sources": []
+}

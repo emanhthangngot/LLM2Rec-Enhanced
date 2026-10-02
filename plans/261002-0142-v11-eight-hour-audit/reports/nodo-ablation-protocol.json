@@ -1,0 +1,80 @@
+{
+  "experiment_id": "v11-semantic-nodo-on-off",
+  "registered_before_training": true,
+  "purpose": "distinguish transient perturbation from its effect on learned clean ranking",
+  "kernel": "trlxun/hanorec-v11-nodo-ablation",
+  "parent_manifest_sha256": "3ffeca62191cd89e433cec171a03cf27395d000fb16f290cbd55b6d1b8771790",
+  "parent_sft_sha256": "7c28454c59e93026ad1a2f882b24df567b32e08b35a80fef8e577916887794c1",
+  "probe_result_sha256": "cb556208ea11fb0f1bc19952f769beb2f3e9cb5ac063017f8cdb64f57145d3e6",
+  "source_sha256": {
+    "prep.py": "5c5b6f51a03b9f408f12d12664128d77dcbfa5917407675f5c8d6030b621a207",
+    "train.py": "eb1769a7566fec2d8ce8769eb9610cb94468f024f404057d43a91cc85a739bf6",
+    "analysis.py": "2f62c6199df405ac7cbb42a3f1d59449ffbdc4f1284eda44621ecc8d3c3ad342",
+    "experiment.json": "4288414f4b57a9c6074454ced2773ace80193346045fa2ae3ba0a7a698b984ec",
+    "audit.py": "a3f0aa6c4de5a0a8dc970c050921eb8784dabb99cb197992d5dd15678f1e87aa",
+    "run-protocol.json": "97832d52d8cb0f66b379d9364baf03c8f435e09835f46e9c4aa9c3130c6efd71",
+    "test_hanorec_fidelity.py": "fe2e99b8c37752792074b29561dec3bb8be8654357cb2308ca901f438a08ddc3",
+    "test_hanorec_protocol.py": "f7ba56e9091420c26dea5181672d2f3e470ddd771d8c88f35daf4617ae76cd29",
+    "test_hanorec_analysis.py": "ce99e8ebe660645ae0168af8375e883a1c0c94a0cb068a0906f36807d3e11fd9",
+    "test_hanorec_identity.py": "9a784ed6d15a757e2907897d220d28ba8476379c49886e10d53d3181b48033ce"
+  },
+  "controlled_config": {
+    "seed": 2024,
+    "model_id": "Qwen/Qwen2.5-VL-3B-Instruct",
+    "model_revision": "66285546d2b821cf421d4f5eb2576359d3770cd3",
+    "precision": "bf16",
+    "history_items": 3,
+    "batch_size": 4,
+    "gradient_accumulation_steps": 8,
+    "learning_rate": 0.0001,
+    "dpo_epochs": 1,
+    "drop_last": true,
+    "beta0": 0.1,
+    "beta_floor": 1e-06,
+    "max_pixels": 16384,
+    "eval_batch_size": 1,
+    "verify_scoring_batching": false,
+    "learning_probe_pairs": 8
+  },
+  "weight": 1.0,
+  "image_condition": "real",
+  "hardness_control": null,
+  "arms": [
+    {
+      "arm_id": "semantic-nodo-on",
+      "noise_sigma": 0.05
+    },
+    {
+      "arm_id": "semantic-nodo-off",
+      "noise_sigma": 0.0
+    }
+  ],
+  "expected_optimizer_updates_per_arm": 34,
+  "validation_events": 265,
+  "true_validation_users": 258,
+  "informative_events": 41,
+  "test_scoring": false,
+  "primary_contrast": {
+    "name": "nodo_off_minus_nodo_on",
+    "metric": "ndcg@10",
+    "test": "paired whole-source-user sign flips; user-cluster bootstrap CI",
+    "family_size": 1,
+    "meaningful_delta": 0.002
+  },
+  "secondary_contrasts": [
+    "each arm minus frozen SFT-only (supporting exploratory)",
+    "Recall@10 (supporting exploratory)"
+  ],
+  "job_timeout_seconds": 9000,
+  "post_training_reserve_seconds": 1200,
+  "total_additional_gpu_cap_seconds": 28800,
+  "limits": [
+    "single paired training seed; no seed uncertainty or native-score reproduction",
+    "NoDO-off is an ablation, not a replacement HaNoRec baseline",
+    "only sigma varies scientifically; execution deadlines/output paths are operational differences",
+    "No inference that probe confidence attenuation is itself a training defect"
+  ],
+  "estimated_full_arm_seconds": 3800,
+  "budget_policy": "full remaining session is fair-shared across remaining arms; reserve1200s per arm after training; deadline-incomplete arm has explicit INCOMPLETE_BUDGET, never usable as COMPLETE",
+  "expected_micro_batches_per_arm": 265
+}

@@ -1,0 +1,19 @@
+{
+  "id": "trlxun/hanorec-v11-nodo-ablation",
+  "title": "hanorec-v11-nodo-ablation",
+  "code_file": "notebook.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_tpu": false,
+  "enable_internet": true,
+  "keywords": [],
+  "dataset_sources": [],
+  "kernel_sources": [
+    "trlxun/hanorec-v11-user-corrected-sft",
+    "trlxun/hanorec-v11-user-corrected-probe"
+  ],
+  "competition_sources": [],
+  "model_sources": []
+}

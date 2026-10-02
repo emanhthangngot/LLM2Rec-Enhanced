@@ -20,6 +20,9 @@ from train import (  # noqa: E402
     _restore_active_adapters,
     _set_active_adapters,
     _set_only_trainable_adapter,
+    LORA_TARGET_REGEX,
+    _build_sft_examples,
+    _disable_dropout,
     hars_normalize_hardness,
     responsiveness,
 )
@@ -241,6 +244,74 @@ class HaNoRecFidelityTests(unittest.TestCase):
         self.assertEqual(result[0]["ranked_candidates"], [3, 2, 1])
         self.assertEqual(result[0]["rank"], 2)
         self.assertTrue(model.training)
+
+    def test_equal_scores_keep_retriever_order_not_item_id_order(self) -> None:
+        model = _ScoreModel()
+        with (
+            patch.object(train_module, "_build_batch_inputs", side_effect=lambda _p, _m, _c, ex, _x, _s: ex),
+            patch.object(
+                train_module, "_batch_answer_logprobs",
+                side_effect=lambda _m, ex, _f, _y, _n: [(_ScoreValue(0.0), _ScoreValue(0.0)) for _ in ex],
+            ),
+        ):
+            result = _score_rows(
+                [{"user_id": "u", "history": [1], "target": 3, "candidates": [9, 3, 7]}],
+                object(), model, {}, 8192, 1, 0, _ScoreTorch(), object(), None,
+            )
+        self.assertEqual(result[0]["ranked_candidates"], [9, 3, 7])
+
+    def test_sft_task_is_balanced_yes_no_with_seeded_negatives(self) -> None:
+        pairs = [
+            {"history": [1, 2, 3], "positive": 10 + i, "sft_negative": 100 + i, "negative": 200 + i}
+            for i in range(6)
+        ]
+        examples = _build_sft_examples(pairs, 7, 8, seed=2024)
+        self.assertEqual(examples, _build_sft_examples(pairs, 7, 8, seed=2024))
+        self.assertEqual(sum(e["answer_token"] == 7 for e in examples), 6)
+        self.assertEqual(sum(e["answer_token"] == 8 for e in examples), 6)
+        for example in examples:
+            expected = {7: {10 + i for i in range(6)}, 8: {100 + i for i in range(6)}}
+            self.assertIn(example["candidate"], expected[example["answer_token"]])
+        self.assertFalse(any(e["candidate"] >= 200 for e in examples), "hard negatives are DPO-only")
+
+    def test_dropout_is_zeroed_including_lora_dropout(self) -> None:
+        class Dropout:
+            def __init__(self, p):
+                self.p = p
+
+        class Model:
+            def __init__(self, modules):
+                self._modules = modules
+
+            def modules(self):
+                return iter(self._modules)
+
+        class Nn:
+            pass
+
+        class Torch:
+            nn = Nn()
+
+        Torch.nn.Dropout = Dropout
+        modules = [Dropout(0.05), Dropout(0.0), object(), Dropout(0.1)]
+        self.assertEqual(_disable_dropout(Model(modules), Torch), 2)
+        self.assertTrue(all(m.p == 0.0 for m in modules if isinstance(m, Dropout)))
+
+    def test_lora_scope_is_language_layers_only(self) -> None:
+        import re
+
+        language = [
+            "base_model.model.model.layers.0.self_attn.q_proj",
+            "base_model.model.model.layers.35.mlp.down_proj",
+        ]
+        frozen = [
+            "base_model.model.visual.blocks.3.mlp.gate_proj",
+            "base_model.model.visual.blocks.3.attn.qkv",
+            "base_model.model.visual.merger.mlp.0",
+            "base_model.model.lm_head",
+        ]
+        self.assertTrue(all(re.fullmatch(LORA_TARGET_REGEX, name) for name in language))
+        self.assertFalse(any(re.fullmatch(LORA_TARGET_REGEX, name) for name in frozen))
 
     def test_json_converter_handles_scalar_protocol_and_rejects_unknown_values(self) -> None:
         self.assertAlmostEqual(_json_default(_Scalar()), 1.5)

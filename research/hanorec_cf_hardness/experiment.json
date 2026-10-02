@@ -14,10 +14,14 @@
   "precision": "bf16",
   "model_id": "Qwen/Qwen2.5-VL-3B-Instruct",
   "model_revision": "66285546d2b821cf421d4f5eb2576359d3770cd3",
-  "weights": [1.0, 0.0, 0.5],
+  "weights": [
+    1.0,
+    0.0,
+    0.5
+  ],
   "noise_sigma": 0.05,
   "beta0": 0.1,
-  "beta_floor": 1.0e-6,
+  "beta_floor": 1e-06,
   "max_pixels": 262144,
   "budget_seconds": 6600,
   "upstream": {
@@ -45,5 +49,10 @@
   },
   "checkpoint_name": "LLM2Rec-budgeted-|kaggle|working|LLM2Rec|repeated_evaluate_with_seq-Sep-09-2026_11-12-13-c93f12.pth",
   "embedding_name": "Qwen2-0.5B-LLM2Rec-IEM-budgeted_step500_title_item_embs.npy",
-  "purpose": "corrected Games adaptation; full signal requires Phase 3 quota gate"
+  "purpose": "corrected Games adaptation; full signal requires Phase 3 quota gate",
+  "identity_pins": {
+    "train": "87814fd96b6d593af6a26918537b4a42c26db17bcaa6a6bc824c113f3359f4ad",
+    "validation": "07393a1dc5a05c967532e80589d1c94d551060cd76f776314bd314c3499214a2",
+    "test": "f7d2195aa484f1335cc0d89c0d28633f549bfb3ec0dcd491c6a3e3243d240cbe"
+  }
 }

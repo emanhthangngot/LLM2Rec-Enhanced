@@ -18,12 +18,15 @@ bijection to SFT, DPO, hardness and evaluation prompts.
 
 | Path | Content |
 |---|---|
-| `prep.py` | Train-only pair construction from frozen SASRec candidates, frequency-matched derangement |
+| `prep.py` | Pinned CSV/downstream identity alignment; train-only negatives exclude all true-user TRAIN interactions; frequency-matched derangement |
 | `train.py` | SFT adapter, stacked DPO adapter with SFT-only reference, NoDO hooks, hardness mixture, candidate scoring |
 | `audit.py` | Fail-closed protocol and artifact audit |
 | `experiment.json`, `run-protocol.json` | Frozen protocol and pinned inputs |
 | `test_hanorec_fidelity.py`, `test_hanorec_protocol.py` | Regression tests (`python -m unittest discover -s . -p "test_hanorec_*.py"` from this directory) |
-| `scripts/build_hanorec_{kaggle,exploratory,scaled75}.py` | Generators of the self-contained Kaggle runners. Running them reproduces the committed `kaggle/*/runner.py` and metadata byte-for-byte |
+| `analysis.py` | Event-weighted user-cluster bootstrap CI, paired null sign-flip p-values, Holm, meaningful-gain verdicts |
+| `scripts/build_hanorec_notebook.py` | Generates NEW `kaggle/hanorec-v11-user-corrected-{sft,probe,arms}/notebook.ipynb`. `repaired-*` notebooks are frozen historical evidence, never regenerated |
+| `scripts/build_nodo_ablation.py` | Generates the prospectively registered matched semantic-only NoDO-on/off notebook; ten core sources remain pinned to the eligible SFT parent |
+| `scripts/build_hanorec_{kaggle,exploratory,scaled75}.py` | Archived generators of the first-implementation / exploratory runners. They inline the **live** `prep.py`/`train.py`, so re-running them no longer reproduces the committed `kaggle/*/runner.py`; those runners are frozen historical evidence |
 | `kaggle/<kernel>/` | Every Kaggle kernel pushed for v11, with its `kernel-metadata.json` |
 | `results/` | Downloaded arm results (see below) |
 
@@ -37,6 +40,10 @@ bijection to SFT, DPO, hardness and evaluation prompts.
 | `hanorec-faithful-signal-smoke` (versions 5–17) | corrected implementation | smoke `COMPLETE` (v14, v17) | correctness and timing only, stamped non-signal |
 | `hanorec-exploratory-1seed` | corrected implementation | `COMPLETE` (v2): seed 2024, 25/25 users, 1 epoch, max_pixels 4096 | exploratory: `NO_SIGNAL_ABOVE_RETRIEVER` |
 | `hanorec-scaled-75users` | corrected implementation | generated; no execution record | none |
+| `hanorec-v11-repaired-sft` v2 + `hanorec-v11-repaired-arms` v1 | later repaired implementation | all COMPLETE (4 SFT epochs, 1 DPO epoch, 4 arms) | mechanism-ineligible: 27 hard negatives/1 SFT negative were same-user TRAIN positives; 265 events are 258 users |
+| `hanorec-v11-user-corrected-{sft,probe}` | current identity/statistics repair | both v1 COMPLETE and independently audited PASS | eligible parent; SFT performance inconclusive; probe perturbation is not evidence of training harm |
+| `hanorec-v11-user-corrected-arms` | current identity/statistics repair | prepared, not submitted | generic CF matrix deferred until matched diagnostic evidence |
+| `hanorec-v11-nodo-ablation` | frozen core plus matched-study orchestration | v1 submitted; completion not observed | registered semantic-only sigma0.05 vs0.0; no new training-effect result yet |
 
 The frozen 3-seed matrix (6 SFT parents + 18 DPO arms, 5 epochs) was projected
 at 87.6–114.3 T4 GPU-hours against an 8-hour ceiling and never ran
@@ -61,3 +68,14 @@ The package code (`prep.py`, `train.py`, `audit.py`) is the corrected
 implementation. It is not the code that produced `full_run_265/`; that code
 survives only inside the self-contained first-implementation runners under
 `kaggle/`.
+
+## Current audit commands and scope
+
+`python audit.py protocol --protocol run-protocol.json` validates the protocol.
+`python audit.py artifacts --protocol run-protocol.json --root <arms-output> --parent-root <sft-parent>` audits the explicit real-only four-arm matrix and validation predictions. The legacy `audit.py analyze` branch and its bootstrap-tail p-values were removed; current inference lives in `analysis.py` and the generated summaries.
+
+Use `python scripts/build_hanorec_notebook.py --job sft`, then `--job probe` only after the new parent is COMPLETE and passes its gate. Read the no-training probe before choosing `--job arms`. Do not push dependent jobs against unfinished parents. The fixed one-seed event cohort can support a bounded investment decision, not native-score reproduction or a universal null-effect claim.
+
+The selected follow-up is built by `python scripts/build_nodo_ablation.py`, not the generic CF matrix. Its scientific contract lives in `plans/261002-0142-v11-eight-hour-audit/reports/nodo-ablation-protocol.json`; submission and cumulative reservations live in `reports/gpu-budget.json` under that plan. Keep sigma variants in distinct output directories with their execution configs and hashed receipts; shared weight/condition names do not identify sigma. See `reports/nodo-ablation-verification.md` for pre-push proof and CPU/synthetic limits.
+
+Audit report: `plans/261002-0142-v11-eight-hour-audit/reports/setup-audit-20261002.md`.

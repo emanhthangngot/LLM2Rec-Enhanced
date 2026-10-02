@@ -17,9 +17,12 @@ the pinned .pth state_dict loads without remapping.
 from __future__ import annotations
 
 import copy
+import ast
+import csv
 import hashlib
 import json
 import math
+import random
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -221,14 +224,38 @@ def _verify_pin(path: Path, pins: dict[str, str]) -> None:
         raise RuntimeError(f"artifact hash mismatch for {path}: expected {expected}, got {actual}")
 
 
-def _future_items_for_prefix(history_and_target: list[int], all_rows: list[list[int]]) -> set[int]:
-    """Return train-known future items for a stable sequence prefix."""
-    future: set[int] = set()
-    prefix_len = len(history_and_target)
-    for row in all_rows:
-        if len(row) > prefix_len and row[:prefix_len] == history_and_target:
-            future.update(row[prefix_len:])
-    return future
+def _identity_rows(input_root: Path, split: str, rows: list[list[int]], expected_sha256: str):
+    """Recover pseudonymous real-user clusters from pinned CSV, checking the +1 item-ID mapping."""
+    folder = {"train": "train", "validation": "valid", "test": "test"}[split]
+    matches = sorted(
+        path for path in input_root.rglob("Video_Games_5_1996-9-2023-10.csv")
+        if path.parent.name == folder
+    )
+    if not matches or not expected_sha256:
+        raise RuntimeError(f"missing pinned {split} identity CSV")
+    if any(_sha256_file(path) != expected_sha256 for path in matches):
+        raise RuntimeError(f"{split} identity CSV hash mismatch")
+    clusters = []
+    with matches[0].open(newline="", encoding="utf-8") as handle:
+        for index, record in enumerate(csv.DictReader(handle)):
+            sequence = [int(item) + 1 for item in ast.literal_eval(record["history_item_id"])]
+            sequence.append(int(record["item_id"]) + 1)
+            if index >= len(rows) or sequence != rows[index]:
+                raise RuntimeError(f"{split} identity CSV/downstream alignment mismatch at row {index}")
+            clusters.append(hashlib.sha256(record["user_id"].encode("utf-8")).hexdigest())
+    if len(clusters) != len(rows):
+        raise RuntimeError(f"{split} identity CSV row count mismatch")
+    return clusters, str(matches[0])
+
+
+def _user_seen_items(rows, clusters):
+    """All TRAIN-known interactions, including dropped-image rows; never read held-out rows here."""
+    if len(rows) != len(clusters):
+        raise ValueError("identity and sequence row counts differ")
+    seen = {}
+    for row, cluster in zip(rows, clusters, strict=True):
+        seen.setdefault(cluster, set()).update(row)
+    return seen
 
 
 def _seeded_selection(
@@ -365,6 +392,14 @@ def prepare(config: dict[str, Any], input_root: Path, output_root: Path, source_
     raw_train_rows = _read_sequences(train_path)
     raw_val_rows = _read_sequences(val_path)
     raw_test_rows = _read_sequences(test_path)
+    identity_pins = config["identity_pins"]
+    train_clusters_raw, train_identity_path = _identity_rows(input_root, "train", raw_train_rows, identity_pins["train"])
+    val_clusters_raw, val_identity_path = _identity_rows(input_root, "validation", raw_val_rows, identity_pins["validation"])
+    test_clusters_raw, test_identity_path = _identity_rows(input_root, "test", raw_test_rows, identity_pins["test"])
+    train_seen = _user_seen_items(raw_train_rows, train_clusters_raw)
+    train_clusters = [cluster for row, cluster in zip(raw_train_rows, train_clusters_raw) if set(row) <= usable_image_ids]
+    val_clusters = [cluster for row, cluster in zip(raw_val_rows, val_clusters_raw) if set(row) <= usable_image_ids]
+    test_clusters = [cluster for row, cluster in zip(raw_test_rows, test_clusters_raw) if set(row) <= usable_image_ids]
     train_rows_full = [row for row in raw_train_rows if set(row) <= usable_image_ids]
     val_rows_full = [row for row in raw_val_rows if set(row) <= usable_image_ids]
     test_rows_full = [row for row in raw_test_rows if set(row) <= usable_image_ids]
@@ -431,6 +466,7 @@ def prepare(config: dict[str, Any], input_root: Path, output_root: Path, source_
     train_scope_rows = [row for _, row in selected_train] if config.get("smoke") else train_rows_full
     train_pairs: list[dict[str, Any]] = []
     train_frequencies: dict[int, int] = {}
+    sft_universe = {int(item) for row in train_scope_rows for item in row}
     for row in train_scope_rows:
         for item in row:
             train_frequencies[item] = train_frequencies.get(item, 0) + 1
@@ -438,23 +474,30 @@ def prepare(config: dict[str, Any], input_root: Path, output_root: Path, source_
         history_full = row[:-1]
         target = int(row[-1])
         history = history_full[-history_items:]
-        future_excluded = _future_items_for_prefix(history_full + [target], train_rows_full)
-        excluded_ids = set(history_full) | {target, 0} | future_excluded
+        cluster = train_clusters[row_index]
+        excluded_ids = train_seen[cluster] | {target, 0}
         ranked = np.argsort(-selected_train_scores[position], kind="stable")
         negative_item = next(
-            (int(rank_index) + 1 for rank_index in ranked if int(rank_index) + 1 not in excluded_ids),
+            (int(rank_index) + 1 for rank_index in ranked
+             if int(rank_index) + 1 in sft_universe and int(rank_index) + 1 not in excluded_ids),
             None,
         )
         if negative_item is None:
             raise RuntimeError(f"could not find a train-only negative for row {row_index}")
+        sft_pool = sorted(sft_universe - excluded_ids)
+        if not sft_pool:
+            raise RuntimeError(f"no train-only SFT negative pool for row {row_index}")
+        sft_negative = int(random.Random(seed * 1_000_003 + int(row_index)).choice(sft_pool))
         train_pairs.append(
             {
                 "user_id": f"train_row_{row_index}",
+                "cluster_id": cluster,
                 "row_index": int(row_index),
                 "history": [int(item) for item in history],
                 "observed_history": [int(item) for item in history_full],
                 "positive": target,
                 "negative": negative_item,
+                "sft_negative": sft_negative,
                 "cf_margin": float(selected_train_scores[position, target - 1] - selected_train_scores[position, negative_item - 1]),
                 "excluded_items": sorted(int(item) for item in excluded_ids),
             }
@@ -470,6 +513,7 @@ def prepare(config: dict[str, Any], input_root: Path, output_root: Path, source_
             built.append(
                 {
                     "user_id": f"{label}_row_{row_index}",
+                    "cluster_id": (val_clusters if label == "validation" else test_clusters)[row_index],
                     "row_index": int(row_index),
                     "history": [int(item) for item in row[:-1][-history_items:]],
                     "target": int(row[-1]),
@@ -484,7 +528,7 @@ def prepare(config: dict[str, Any], input_root: Path, output_root: Path, source_
     evaluation_rows = build_eval_rows(test_rows, eval_user_target, "test")
     train_item_ids: set[int] = {int(item) for row in train_scope_rows for item in row}
     for pair in train_pairs:
-        train_item_ids.update((pair["positive"], pair["negative"]))
+        train_item_ids.update((pair["positive"], pair["negative"], pair["sft_negative"]))
     eval_item_ids: set[int] = set()
     for row in validation_rows + evaluation_rows:
         eval_item_ids.update(row["history"])
@@ -501,6 +545,7 @@ def prepare(config: dict[str, Any], input_root: Path, output_root: Path, source_
             rank = ranked.index(target) + 1 if target in ranked else 0
             predictions.append({
                 "user_id": row["user_id"],
+                "cluster_id": row["cluster_id"],
                 "target": target,
                 "rank": rank,
                 "ndcg@10": (1.0 / math.log2(rank + 1)) if 0 < rank <= 10 else 0.0,
@@ -547,13 +592,19 @@ def prepare(config: dict[str, Any], input_root: Path, output_root: Path, source_
         "full_data": {"path": str(full_data_path), "sha256": _sha256_file(full_data_path)},
         "item_titles": {"path": str(titles_path), "sha256": _sha256_file(titles_path)},
         "manifest": {"path": str(manifest_path), "sha256": _sha256_file(manifest_path)},
+        "identity_csv": {
+            "train": {"path": train_identity_path, "sha256": identity_pins["train"]},
+            "validation": {"path": val_identity_path, "sha256": identity_pins["validation"]},
+            "test": {"path": test_identity_path, "sha256": identity_pins["test"]},
+        },
+        "sampling_unit": "seeded event rows; statistical resampling clusters by pseudonymous true user",
         "total_item_num": total_item_num,
         "sasrec_config": sasrec_config,
         "train_item_ids": sorted(train_item_ids),
         "evaluation_only_item_ids": sorted(eval_item_ids - train_item_ids),
         "train_contract_sha256": _sha256_json(train_contract),
         "shuffle_map_sha256": _sha256_json(shuffle_map),
-        "train_pair_construction": "seeded train rows; negative excludes observed history, target, and train-known future items",
+        "train_pair_construction": "seeded train rows; negatives drawn from train-only universe excluding all TRAIN-known interactions of the true user",
         "eval_construction": "validation/test rows; frozen SASRec top-M candidates; targets never inserted",
         "shuffle_unseen_policy": "identity for evaluation-only items; train item mapping is complete and audited",
         "history_items": history_items,

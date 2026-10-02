@@ -2,9 +2,9 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
-import random
 from pathlib import Path
 from typing import Any
 
@@ -59,16 +59,22 @@ def _find(root: Path, name: str) -> list[Path]:
     return sorted(path for path in root.rglob(name) if path.is_file())
 
 
-def audit_artifacts(root: Path, protocol: dict[str, Any]) -> dict[str, Any]:
+def audit_artifacts(root: Path, protocol: dict[str, Any], *, parent_root: Path | None = None) -> dict[str, Any]:
     required = ["sft_bundle.json", "sft_lora_state.pt"]
-    missing = [name for name in required if not _find(root, name)]
+    missing = [name for name in required if not _find(parent_root or root, name)]
+    parent_hashes = set()
+    for path in _find(parent_root or root, "sft_lora_state.pt"):
+        with path.open("rb") as handle:
+            parent_hashes.add(hashlib.file_digest(handle, "sha256").hexdigest())
     arm_results = _find(root, "arm_result.json")
     errors = [f"missing {name}" for name in missing]
-    expected = {
-        (float(weight), condition)
-        for weight in protocol["weights"]
-        for condition in protocol["controls"]["image_conditions"]
-    }
+    expected = (
+        {(float(arm["weight"]), arm["image_condition"], arm.get("hardness_control"))
+         for arm in protocol["execution_matrix"]}
+        if "execution_matrix" in protocol else
+        {(float(weight), condition, None)
+         for weight in protocol["weights"] for condition in protocol["controls"]["image_conditions"]}
+    )
     smoke_manifest = root / "smoke_manifest.json"
     if smoke_manifest.exists():
         smoke = _load(smoke_manifest)
@@ -76,7 +82,7 @@ def audit_artifacts(root: Path, protocol: dict[str, Any]) -> dict[str, Any]:
             errors.append("smoke manifest is not explicitly non-signal")
         if smoke.get("purpose") != "correctness_only_non_signal":
             errors.append("smoke purpose is not correctness-only")
-        expected = {(1.0, "real")}
+        expected = {(1.0, "real", None)}
         for label in ("sft_gpu_memory", "dpo_gpu_memory"):
             memory = smoke.get(label, {})
             total = int(memory.get("total_bytes", 0))
@@ -92,16 +98,17 @@ def audit_artifacts(root: Path, protocol: dict[str, Any]) -> dict[str, Any]:
             ]
             if not updates or any(float(row.get("seconds", 0)) <= 0 for row in updates):
                 errors.append(f"invalid {label} optimizer timing")
-    observed: set[tuple[float, str]] = set()
+    observed: set[tuple[float, str, str | None]] = set()
     for path in arm_results:
         result = _load(path)
-        key = (float(result.get("weight", float("nan"))), str(result.get("image_condition", "")))
+        key = (float(result.get("weight", float("nan"))), str(result.get("image_condition", "")),
+               result.get("hardness_control"))
         if key in observed:
             errors.append(f"duplicate arm: {key}")
         observed.add(key)
         if result.get("status") != "COMPLETE":
             errors.append(f"incomplete arm: {path}")
-        predictions = result.get("predictions", [])
+        predictions = result.get("validation_predictions" if protocol.get("evaluation_split") == "validation" else "predictions", [])
         if not predictions:
             errors.append(f"arm has no predictions: {path}")
         for row in predictions:
@@ -118,95 +125,16 @@ def audit_artifacts(root: Path, protocol: dict[str, Any]) -> dict[str, Any]:
             errors.append(f"missing checkpoint: {path}")
         if not result.get("parent_sft_sha256"):
             errors.append(f"missing parent hash: {path}")
+        if parent_hashes and result.get("parent_sft_sha256") not in parent_hashes:
+            errors.append(f"parent checkpoint hash mismatch: {path}")
     if observed != expected:
-        errors.append(f"arm matrix mismatch: expected {sorted(expected)}, observed {sorted(observed)}")
+        errors.append(f"arm matrix mismatch: expected {sorted(expected, key=repr)}, observed {sorted(observed, key=repr)}")
     output = {
         "status": "PASS" if not errors else "FAIL",
         "errors": errors,
-        "sft_bundle_count": len(_find(root, "sft_bundle.json")),
+        "sft_bundle_count": len(_find(parent_root or root, "sft_bundle.json")),
         "arm_result_count": len(arm_results),
         "expected_arm_count": len(expected),
-    }
-    print(json.dumps(output, indent=2))
-    return output
-
-
-def _paired_mean(rows_a: list[dict[str, Any]], rows_b: list[dict[str, Any]], metric: str) -> float:
-    by_key = {(row["user_id"], row["target"]): row for row in rows_b}
-    deltas = []
-    for row in rows_a:
-        other = by_key.get((row["user_id"], row["target"]))
-        if other is None:
-            raise ValueError("paired prediction keys differ")
-        deltas.append(float(row[metric]) - float(other[metric]))
-    if not deltas:
-        raise ValueError("no paired predictions")
-    return sum(deltas) / len(deltas)
-
-def _paired_deltas(rows_a: list[dict[str, Any]], rows_b: list[dict[str, Any]], metric: str) -> list[float]:
-    by_key = {(row["user_id"], row["target"]): row for row in rows_b}
-    deltas = []
-    for row in rows_a:
-        other = by_key.get((row["user_id"], row["target"]))
-        if other is None:
-            raise ValueError("paired prediction keys differ")
-        deltas.append(float(row[metric]) - float(other[metric]))
-    if not deltas:
-        raise ValueError("no paired predictions")
-    return deltas
-
-
-def _bootstrap(deltas: list[float], resamples: int, seed: int) -> dict[str, float]:
-    rng = random.Random(seed)
-    means = [
-        sum(deltas[rng.randrange(len(deltas))] for _ in deltas) / len(deltas)
-        for _ in range(resamples)
-    ]
-    means.sort()
-    low = means[max(0, int(0.025 * resamples) - 1)]
-    high = means[min(resamples - 1, int(0.975 * resamples))]
-    p = min(1.0, 2.0 * min(
-        sum(value <= 0.0 for value in means) / resamples,
-        sum(value >= 0.0 for value in means) / resamples,
-    ))
-    return {"mean": sum(deltas) / len(deltas), "ci_low": low, "ci_high": high, "p_value": p}
-
-
-def analyze(root: Path, bootstrap_resamples: int, seed: int) -> dict[str, Any]:
-    if bootstrap_resamples < 1000:
-        raise ValueError("bootstrap_resamples must be at least 1000")
-    arms: dict[tuple[float, str], dict[str, Any]] = {}
-    for path in _find(root, "arm_result.json"):
-        result = _load(path)
-        key = (float(result["weight"]), str(result["image_condition"]))
-        if key in arms:
-            raise RuntimeError(f"duplicate arm {key}")
-        arms[key] = result
-    required = [
-        (0.0, "real"), (0.5, "real"), (1.0, "real"),
-        (0.0, "shuffle"), (0.5, "shuffle"), (1.0, "shuffle"),
-    ]
-    missing = [key for key in required if key not in arms]
-    if missing:
-        raise RuntimeError(f"missing final arms: {missing}")
-    contrasts = []
-    for index, weight in enumerate((0.0, 0.5)):
-        real = arms[(weight, "real")]["predictions"]
-        baseline = arms[(1.0, "real")]["predictions"]
-        ndcg = _bootstrap(_paired_deltas(real, baseline, "ndcg@10"), bootstrap_resamples, seed + index)
-        recall = _bootstrap(_paired_deltas(real, baseline, "recall@10"), bootstrap_resamples, seed + 100 + index)
-        contrasts.append({"weight": weight, "contrast": "w-vs-w1", "ndcg@10": ndcg, "recall@10": recall})
-    p_values = sorted((item["ndcg@10"]["p_value"], index) for index, item in enumerate(contrasts))
-    holm = {}
-    total = len(p_values)
-    for rank, (p_value, index) in enumerate(p_values):
-        holm[str(contrasts[index]["weight"])] = min(1.0, (total - rank) * p_value)
-    output = {
-        "status": "COMPLETE",
-        "bootstrap_resamples": bootstrap_resamples,
-        "seed": seed,
-        "holm_adjusted_ndcg_p": holm,
-        "contrasts": contrasts,
     }
     print(json.dumps(output, indent=2))
     return output
@@ -220,24 +148,15 @@ def main() -> int:
     artifacts_parser = subparsers.add_parser("artifacts")
     artifacts_parser.add_argument("--protocol", type=Path, required=True)
     artifacts_parser.add_argument("--root", type=Path, required=True)
-    analyze_parser = subparsers.add_parser("analyze")
-    analyze_parser.add_argument("--protocol", type=Path, required=True)
-    analyze_parser.add_argument("--root", type=Path, required=True)
-    analyze_parser.add_argument("--bootstrap-resamples", type=int, default=20000)
-    analyze_parser.add_argument("--seed", type=int, default=20260920)
+    artifacts_parser.add_argument("--parent-root", type=Path, help="separate mounted SFT parent directory")
     args = parser.parse_args()
     if args.command == "protocol":
         result = audit_protocol(args.protocol)
-    elif args.command == "artifacts":
-        protocol_result = audit_protocol(args.protocol)
-        if protocol_result["status"] != "PASS":
-            return 1
-        result = audit_artifacts(args.root, _load(args.protocol))
     else:
         protocol_result = audit_protocol(args.protocol)
         if protocol_result["status"] != "PASS":
             return 1
-        result = analyze(args.root, args.bootstrap_resamples, args.seed)
+        result = audit_artifacts(args.root, _load(args.protocol), parent_root=args.parent_root)
     return 0 if result["status"] in {"PASS", "COMPLETE"} else 1
 
 

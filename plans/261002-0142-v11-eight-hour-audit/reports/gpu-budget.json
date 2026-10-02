@@ -1,0 +1,58 @@
+{
+  "approved_additional_gpu_session_seconds": 28800,
+  "allocation_caps_seconds": {
+    "corrected_sft": 10800,
+    "clean_noisy_probe": 1800,
+    "matched_followup": 16200
+  },
+  "quota_before_submission": {
+    "used_hours": 7.74,
+    "remaining_hours": 22.26
+  },
+  "runs": [
+    {
+      "kernel": "trlxun/hanorec-v11-user-corrected-sft",
+      "version": 1,
+      "account": "a",
+      "status": "COMPLETE; parent eligibility audit PASS",
+      "timeout_seconds": 10800,
+      "actual_charged_seconds": null,
+      "notebook_sha256": "147314f8431e389ca6411eded95f65241edba85fac5be0ee0e45cb31d05725ec",
+      "observed_notebook_elapsed_seconds": 9024.0,
+      "observed_last_kernel_log_seconds": 9052.654895594,
+      "billing_note": "Notebook/log runtime observed; exact per-kernel billed GPU time not exposed in these artifacts."
+    },
+    {
+      "kernel": "trlxun/hanorec-v11-user-corrected-probe",
+      "version": 1,
+      "account": "a",
+      "status": "COMPLETE; source/parent/count/finite/null audit PASS",
+      "timeout_seconds": 1800,
+      "actual_charged_seconds": null,
+      "notebook_sha256": "8cc484296e219dd7d1b275431e1ee15bf9ab19e62fd4b59b4ec1b87acb7e5b43",
+      "parent_manifest_sha256": "3ffeca62191cd89e433cec171a03cf27395d000fb16f290cbd55b6d1b8771790",
+      "parent_sft_sha256": "7c28454c59e93026ad1a2f882b24df567b32e08b35a80fef8e577916887794c1",
+      "purpose": "no-training clean/noisy preference probe",
+      "observed_notebook_elapsed_seconds": 185.050715696,
+      "observed_last_kernel_log_seconds": 203.026961874,
+      "billing_note": "Observed log/runtime; exact billed per-kernel GPU time not exposed."
+    },
+    {
+      "kernel": "trlxun/hanorec-v11-nodo-ablation",
+      "version": 1,
+      "account": "a",
+      "status": "SUBMITTED; completion not observed",
+      "timeout_seconds": 9000,
+      "actual_charged_seconds": null,
+      "notebook_sha256": "8111f360521d299a79ebc3f2f62666651ccb97fc4303bf20b48e80cba18bc5a1",
+      "prospective_protocol_sha256": "acb9a84990fcedf6dbe6ea4efc0791f1092e5ddd7db1b150209d514dc21038d2",
+      "parent_manifest_sha256": "3ffeca62191cd89e433cec171a03cf27395d000fb16f290cbd55b6d1b8771790",
+      "parent_sft_sha256": "7c28454c59e93026ad1a2f882b24df567b32e08b35a80fef8e577916887794c1",
+      "purpose": "matched semantic-only DPO sigma0.05 vs0.0"
+    }
+  ],
+  "worst_case_reserved_seconds": 21600,
+  "unreserved_ceiling_seconds": 7200,
+  "no_automatic_polling": true,
+  "conservative_remaining_budget_seconds": 7200
+}
